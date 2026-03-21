@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+nircmd.exe
+test_groq.py
+test_openrouter.py
+test_sambanova.py
+memory.json

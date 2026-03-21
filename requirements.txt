@@ -1,0 +1,6 @@
+pyautogui
+pygetwindow
+pywin32
+rapidfuzz
+psutil
+winrt-runtime
