@@ -694,5 +694,13 @@
     "data": {
       "song": "shape of you"
     }
+  },
+  {
+    "date": "2026-03-24",
+    "time": "17:04:55",
+    "type": "app_opened",
+    "data": {
+      "app": "calculator"
+    }
   }
 ]
