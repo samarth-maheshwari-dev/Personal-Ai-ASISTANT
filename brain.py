@@ -55,6 +55,8 @@ User: "kya haal hai?" → {"type":"conversation","reply":"Sab theek hai, Batao k
 User: "who made you?" → {"type":"conversation","reply":"My creator built me. Loyalty runs deep."}
 User: "chrome hata do" → {"type":"command","action":"close","target":"chrome","app":"chrome","arg":null}
 User: "spotify pe shape of you bajao" → {"type":"command","action":"play","target":"spotify","app":"spotify","arg":"shape of you"}
+User: "play shape of you on spotify" → {"type":"command","action":"play_song","target":"spotify","app":"spotify","arg":"shape of you"}
+User: "spotify pe believer bajao" → {"type":"command","action":"play_song","target":"spotify","app":"spotify","arg":"believer"}
 User: "search python tutorial on youtube" → {"type":"command","action":"search_youtube","target":"youtube","app":"chrome","arg":"python tutorial"}
 User: "youtube pe elon musk ki video lagao pehli wali" → {"type":"command","action":"search_youtube","target":"youtube","app":"chrome","arg":"elon musk pehli wali"}
 User: "india ka aaj ka weather batao" → {"type":"command","action":"web_search","target":"","app":"","arg":"india weather today"}
@@ -83,10 +85,18 @@ def call_sambanova(user_input: str) -> dict:
     if text.startswith("```"):
         lines = text.split("\n")
         text = "\n".join(lines[1:-1]) if len(lines) > 2 else text
-    text = text.strip()
     if "{" in text and "}" in text:
         start = text.index("{")
-        end = text.rindex("}") + 1
+        depth = 0
+        end = start
+        for i, ch in enumerate(text[start:], start):
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
         text = text[start:end]
     return json.loads(text)
 
@@ -112,10 +122,18 @@ def call_cerebras(user_input: str) -> dict:
     if text.startswith("```"):
         lines = text.split("\n")
         text = "\n".join(lines[1:-1]) if len(lines) > 2 else text
-    text = text.strip()
     if "{" in text and "}" in text:
         start = text.index("{")
-        end = text.rindex("}") + 1
+        depth = 0
+        end = start
+        for i, ch in enumerate(text[start:], start):
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
         text = text[start:end]
     return json.loads(text)
 
@@ -143,10 +161,18 @@ def call_openrouter(user_input: str) -> dict:
     if text.startswith("```"):
         lines = text.split("\n")
         text = "\n".join(lines[1:-1]) if len(lines) > 2 else text
-    text = text.strip()
     if "{" in text and "}" in text:
         start = text.index("{")
-        end = text.rindex("}") + 1
+        depth = 0
+        end = start
+        for i, ch in enumerate(text[start:], start):
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
         text = text[start:end]
     return json.loads(text)
 
@@ -166,23 +192,189 @@ def call_ollama(user_input: str) -> dict:
     if text.startswith("```"):
         lines = text.split("\n")
         text = "\n".join(lines[1:-1]) if len(lines) > 2 else text
-    text = text.strip()
     if "{" in text and "}" in text:
         start = text.index("{")
-        end = text.rindex("}") + 1
+        depth = 0
+        end = start
+        for i, ch in enumerate(text[start:], start):
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
         text = text[start:end]
     return json.loads(text)
+
+
+def call_openrouter_command(user_input: str) -> dict:
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://jarvis.local",
+        "X-Title": "Jarvis"
+    }
+    command_prompt = """You are a Windows PC command parser.
+Output ONLY one valid JSON object. No code. No explanation. Ever.
+
+FORMAT: {"type":"command","action":"<action>","target":"<target>","app":"<app>","arg":"<arg>"}
+
+CRITICAL: "calculator" = Windows app. NEVER write calculator code.
+CRITICAL: If input has "then/aur/phir" → process FIRST action only.
+CRITICAL: NEVER output anything except one JSON object.
+
+band/bandh/hatao = close
+kholo/chalao = open
+minimize/chota = minimize
+maximize/bada = maximize
+restore = restore
+focus = focus
+If no app name → target=""
+
+EXAMPLES:
+"calculator kholo" → {"type":"command","action":"open","target":"calculator","app":"","arg":""}
+"band karo" → {"type":"command","action":"close","target":"","app":"","arg":""}
+"maximize karo" → {"type":"command","action":"maximize","target":"","app":"","arg":""}
+"calculator kholo phir maximize karo" → {"type":"command","action":"open","target":"calculator","app":"","arg":""}
+"notepad band karo" → {"type":"command","action":"close","target":"notepad","app":"","arg":""}
+"chrome kholo" → {"type":"command","action":"open","target":"chrome","app":"","arg":""}
+"play shape of you on spotify" → {"type":"command","action":"play_song","target":"spotify","app":"spotify","arg":"shape of you"}
+"search python on youtube" → {"type":"command","action":"search_youtube","target":"youtube","app":"chrome","arg":"python"}
+    "search code with harry on youtube" → {"type":"command","action":"search_youtube","target":"youtube","app":"chrome","arg":"code with harry"}
+    "search lofi music on youtube" → {"type":"command","action":"search_youtube","target":"youtube","app":"chrome","arg":"lofi music"}
+    "search python tutorial for beginners on youtube" → {"type":"command","action":"search_youtube","target":"youtube","app":"chrome","arg":"python tutorial for beginners"}
+    "next on spotify" → {"type":"command","action":"next","target":"spotify","app":"spotify","arg":""}
+    "pause on spotify" → {"type":"command","action":"pause","target":"spotify","app":"spotify","arg":""}
+    "previous on spotify" → {"type":"command","action":"previous","target":"spotify","app":"spotify","arg":""}
+    "play on spotify" → {"type":"command","action":"play","target":"spotify","app":"spotify","arg":""}"""
+
+    FREE_MODELS = [
+        "mistralai/mistral-small-3.1-24b-instruct:free",
+        "qwen/qwen3-4b:free",
+    ]
+    for model in FREE_MODELS:
+        try:
+            body = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": command_prompt},
+                    {"role": "user", "content": user_input}
+                ],
+                "temperature": 0.0,
+                "max_tokens": 150
+            }
+            r = requests.post(url, json=body, headers=headers, timeout=15)
+            if r.status_code == 200:
+                text = r.json()["choices"][0]["message"]["content"].strip()
+                if "{" in text and "}" in text:
+                    start = text.index("{")
+                    depth = 0
+                    end = start
+                    for i, ch in enumerate(text[start:], start):
+                        if ch == "{": depth += 1
+                        elif ch == "}":
+                            depth -= 1
+                            if depth == 0:
+                                end = i + 1
+                                break
+                    text = text[start:end]
+                return json.loads(text)
+        except Exception:
+            continue
+    raise Exception("OpenRouter command failed")
 
 
 def classify_input(text: str) -> str:
     t = text.lower().strip()
     
+    if ' then ' in t or ' phir ' in t or ' aur ' in t or ' and ' in t:
+        import re
+        first_part = re.split(r'\s+then\s+|\s+phir\s+|\s+aur\s+|\s+and\s+', t)[0]
+        return classify_input(first_part)
+    
+    app_command_patterns = [
+        'band karo', 'band kar', 'close karo', 'hatao',
+        'minimize karo', 'maximize karo', 'focus karo',
+        'restore karo', 'chota karo', 'bada karo',
+    ]
+    if any(p in t for p in app_command_patterns):
+        return 'command'
+    
+    if t.startswith('memory'):
+        return 'command'
+    
+    # BLOCK 1 — App name present + action word = always command
+    app_names = [
+        'calculator', 'notepad', 'chrome', 'spotify', 'whatsapp',
+        'youtube', 'settings', 'explorer', 'file explorer', 'vlc',
+        'discord', 'telegram', 'instagram', 'paint', 'camera',
+        'teams', 'word', 'excel', 'powerpoint', 'antigravity',
+    ]
+    hinglish_actions = [
+        'kholo', 'band', 'karo', 'minimize', 'maximize',
+        'focus', 'restore', 'chalao', 'hatao', 'khul', 'bandh',
+        'open', 'close', 'start', 'launch',
+    ]
+    
+    has_app = any(app in t for app in app_names)
+    has_action = any(action in t for action in hinglish_actions)
+    
+    if has_app and has_action:
+        return 'command'
+    
+    # Also: first word is app name = command
+    first_word = t.split()[0] if t.split() else ''
+    if first_word in app_names:
+        return 'command'
+    
+    # Music commands → always command, never conversation
+    music_patterns = [
+        'play ', 'bajao', 'suno', 'gaana', 'song', 'music',
+        'on spotify', 'spotify pe', 'on youtube', 'youtube pe',
+    ]
+    # But exclude "play next/previous" which are media controls
+    if any(p in t for p in music_patterns):
+        if 'next' not in t and 'previous' not in t and 'prev' not in t:
+            return 'command'
+    
+    # HIGHEST PRIORITY: YouTube/search patterns → always command
+    youtube_patterns = [
+        'search', 'dhundho', 'dhundo', 'find',
+        'youtube pe', 'youtube par', 'youtube mein',
+        'on youtube', 'yt pe', 'play on youtube',
+        'video lagao', 'video chalao', 'video dikhao',
+    ]
+    if any(p in t for p in youtube_patterns):
+        return 'command'
+    
+    # HIGHEST PRIORITY: Specific app commands → always command
+    app_command_patterns = [
+        'band karo', 'band kar', 'kholna', 'kholo',
+        'minimize karo', 'maximize karo', 'focus karo',
+        'close karo', 'open karo', 'start karo',
+    ]
+    if any(p in t for p in app_command_patterns):
+        return 'command'
+
     greetings = ['hi', 'hello', 'hey', 'hii', 'helo', 'sup',
                  'yo', 'namaste', 'namaskar', 'jai shri ram',
                  'good morning', 'good evening', 'good night',
                  'gm', 'gn', 'bye', 'goodbye', 'alvida']
     if t.strip() in greetings:
         return 'conversation'
+    
+    if any(t.startswith(g) for g in ['hi ', 'hello ', 'hey ']):
+        return 'conversation'
+    
+    youtube_search_patterns = [
+        'search on youtube', 'youtube pe search',
+        'youtube mein search', 'search youtube',
+        'youtube par search', 'yt pe search',
+    ]
+    if any(p in t for p in youtube_search_patterns):
+        return 'command'
     
     short_affirmatives = ['haan', 'ha', 'yes', 'ok', 'okay', 
                           'theek hai', 'acha', 'sure', 'go ahead',
@@ -272,35 +464,62 @@ def call_cerebras_command(user_input: str) -> dict:
         "Content-Type": "application/json"
     }
     
-    command_prompt = """You are a command parser. Convert user input to JSON.
-Return ONLY valid JSON, nothing else.
+    command_prompt = """You are a command parser for a Windows PC assistant.
+Your ONLY job is to convert user input into JSON.
+You NEVER write code. You NEVER explain anything.
+You ONLY output a single valid JSON object.
 
-FORMAT: {"type":"command","action":"<verb>","target":"<what>","app":"<app>","arg":"<extra>"}
+OUTPUT FORMAT:
+{"type":"command","action":"<action>","target":"<target>","app":"<app>","arg":"<arg>"}
 
-ACTIONS: open, close, minimize, maximize, restore, focus, play, pause, next, 
-previous, play_song, search_youtube, whatsapp_message, type_text, 
-set_volume, mute, unmute, increase, decrease, web_search
+ACTIONS LIST:
+open, close, minimize, maximize, restore, focus, play, pause, 
+next, previous, play_song, search_youtube, web_search,
+increase, decrease, mute, unmute, set_volume
 
-RULES:
-- If query asks for weather/news/facts WITHOUT app name → action=web_search
-- "weather", "news", "khabar", "mausam" without app → web_search
-- youtube/chrome + search → search_youtube
+CRITICAL RULES:
+1. NEVER write Python code or any code
+2. NEVER explain anything
+3. ALWAYS output ONLY one JSON object
+4. If input has "then/aur/phir" — process FIRST action only
+5. "calculator" is a Windows app name, NOT a coding request
+6. "band/bandh/hatao" = close action
+7. "kholo/chalaao" = open action
+8. "minimize/chota karo" = minimize action
+9. "maximize/bada karo" = maximize action
+10. If no app name given → target=""
 
-HINDI MAPPINGS:
-band/bandh/hatao/bund = close
-kholo/chalao/chalaao = open  
-bajao/sunao = play_song (if song name present)
-agla = next, pichla = previous
-badhaao/tej = increase volume, ghatao/dhima = decrease volume
+HINDI/HINGLISH MAPPINGS:
+band/bandh/hatao/bund → close
+kholo/chalao/chalu/khole → open
+bajao/sunao → play_song
+agla → next
+pichla → previous
+badhaao/tej → increase
+ghatao/dhima → decrease
 
 EXAMPLES:
-"open spotify" → {"type":"command","action":"open","target":"spotify","app":"","arg":""}
-"spotify band karo" → {"type":"command","action":"close","target":"spotify","app":"","arg":""}
-"play life in rio on spotify" → {"type":"command","action":"play_song","target":"spotify","app":"spotify","arg":"life in rio"}
+"chrome kholo" → {"type":"command","action":"open","target":"chrome","app":"","arg":""}
+"notepad band karo" → {"type":"command","action":"close","target":"notepad","app":"","arg":""}
+"calculator kholo" → {"type":"command","action":"open","target":"calculator","app":"","arg":""}
+"minimize karo" → {"type":"command","action":"minimize","target":"","app":"","arg":""}
+"maximize karo" → {"type":"command","action":"maximize","target":"","app":"","arg":""}
+"band karo" → {"type":"command","action":"close","target":"","app":"","arg":""}
+"calculator kholo then minimize karo" → {"type":"command","action":"open","target":"calculator","app":"","arg":""}
+"open spotify.com" → {"type":"command","action":"open","target":"https://spotify.com","app":"chrome","arg":""}
+"play shape of you on spotify" → {"type":"command","action":"play_song","target":"spotify","app":"spotify","arg":"shape of you"}
 "search python on youtube" → {"type":"command","action":"search_youtube","target":"youtube","app":"chrome","arg":"python"}
-"indore weather" → {"type":"command","action":"web_search","target":"","app":"","arg":"indore weather"}
-"iran vs us war news" → {"type":"command","action":"web_search","target":"","app":"","arg":"iran us war news"}
-"file explorer band karo" → {"type":"command","action":"close","target":"file explorer","app":"","arg":""}
+"search code with harry on youtube" → {"type":"command","action":"search_youtube","target":"youtube","app":"chrome","arg":"code with harry"}
+"search lofi music on youtube" → {"type":"command","action":"search_youtube","target":"youtube","app":"chrome","arg":"lofi music"}
+"search python tutorial for beginners on youtube" → {"type":"command","action":"search_youtube","target":"youtube","app":"chrome","arg":"python tutorial for beginners"}
+"next on spotify" → {"type":"command","action":"next","target":"spotify","app":"spotify","arg":""}
+"pause on spotify" → {"type":"command","action":"pause","target":"spotify","app":"spotify","arg":""}
+"previous on spotify" → {"type":"command","action":"previous","target":"spotify","app":"spotify","arg":""}
+"play on spotify" → {"type":"command","action":"play","target":"spotify","app":"spotify","arg":""}
+"indore weather" → {"type":"command","action":"web_search","target":"","app":"","arg":"indore weather today"}
+"awaaz badhaao" → {"type":"command","action":"increase","target":"volume","app":"","arg":""}
+"awaaz band karo" → {"type":"command","action":"mute","target":"","app":"","arg":""}
+"volume 40 karo" → {"type":"command","action":"set_volume","target":"40","app":"","arg":""}
 """
     
     body = {
@@ -316,7 +535,18 @@ EXAMPLES:
     r.raise_for_status()
     text = r.json()["choices"][0]["message"]["content"].strip()
     if "{" in text and "}" in text:
-        text = text[text.index("{"):text.rindex("}")+1]
+        start = text.index("{")
+        depth = 0
+        end = start
+        for i, ch in enumerate(text[start:], start):
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
+        text = text[start:end]
     return json.loads(text)
 
 
@@ -338,6 +568,7 @@ For code: give complete working code with explanation.
 For stories: give full detailed answer, don't stop midway.
 For questions: give accurate factual answer.
 Be helpful, friendly, like a smart friend.
+Complete every response properly. Never leave a sentence unfinished. If running out of space, summarize remaining points briefly and end cleanly.
 
 IMPORTANT: If user asks 'kya tum X kar sakte ho' or 'can you X',
 DO NOT ask for confirmation. Just DO X immediately.
@@ -377,6 +608,7 @@ For code: give complete working code with explanation.
 For stories: give full detailed answer.
 For questions: give accurate factual answer.
 Be helpful and friendly.
+Complete every response properly. Never leave a sentence unfinished. If running out of space, summarize remaining points briefly and end cleanly.
 
 IMPORTANT: If user asks 'kya tum X kar sakte ho' or 'can you X',
 DO NOT ask for confirmation. Just DO X immediately.
@@ -401,7 +633,7 @@ Example: 'kya tum c++ code likh sakte ho' → write the c++ code directly."""
                 "model": model,
                 "messages": messages,
                 "temperature": 0.7,
-                "max_tokens": 4000
+                "max_tokens": 2000
             }
             r = requests.post(url, json=body, headers=headers, timeout=20)
             if r.status_code == 200:
@@ -425,13 +657,19 @@ def think(user_input: str) -> dict:
         providers = [
             ("Cerebras", call_cerebras_command),
             ("SambaNova", call_sambanova),
-            ("OpenRouter", call_openrouter),
+            ("OpenRouter", call_openrouter_command),
             ("Ollama", call_ollama),
         ]
         for name, fn in providers:
             try:
                 result = fn(user_input)
                 if isinstance(result, dict) and "type" in result:
+                    if result.get('type') == 'conversation':
+                        reply = result.get('reply', '').strip()
+                        if not reply:
+                            continue
+                        print(f"[Brain:{name}]", end=" ")
+                        return result
                     print(f"[Brain:{name}]", end=" ")
                     if result.get("action") == "raw" and result.get("target"):
                         raw_target = result.get("target", "")
@@ -485,6 +723,9 @@ INSTRUCTIONS:
                     result = fn(summary_prompt)
                     if isinstance(result, dict):
                         if result.get('type') == 'conversation':
+                            reply = result.get('reply', '').strip()
+                            if not reply:
+                                continue
                             print(f"[Brain:{name}]", end=" ")
                             return result
                         elif result.get('type') == 'command':
@@ -522,9 +763,12 @@ INSTRUCTIONS:
                 result = fn(user_input)
                 if isinstance(result, dict) and "type" in result:
                     if result["type"] == "conversation":
+                        reply = result.get("reply", "").strip()
+                        if not reply:
+                            continue
                         _conversation_history.append({
                             "role": "assistant",
-                            "content": result.get("reply", "")
+                            "content": reply
                         })
                         if len(_conversation_history) > 20:
                             _conversation_history = _conversation_history[-20:]
