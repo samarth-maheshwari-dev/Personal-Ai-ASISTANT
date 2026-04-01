@@ -10,6 +10,7 @@ SESSION_FILE = os.path.join(MEMORY_DIR, 'session.json')
 DAILY_LOG_FILE = os.path.join(MEMORY_DIR, 'daily_log.json')
 LONG_TERM_FILE = os.path.join(MEMORY_DIR, 'history.json')
 LAST_APP_FILE = os.path.join(MEMORY_DIR, 'last_app.json')
+APP_HISTORY_FILE = os.path.join(MEMORY_DIR, 'app_history.json')
 CONFIG_FILE = os.path.join(MEMORY_DIR, 'config.json')
 
 
@@ -87,6 +88,32 @@ class MemoryManager:
         """Set last opened/focused app."""
         last_app = {'app': app_name, 'updated': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         self._save_json(LAST_APP_FILE, last_app)
+        # Also update app history for "close dono" feature
+        self._add_to_app_history(app_name)
+    
+    def _add_to_app_history(self, app_name):
+        """Track app in history (keeps last 5 apps for close dono feature)."""
+        history = self._load_json(APP_HISTORY_FILE, [])
+        # Remove if already exists (to move to front)
+        history = [h for h in history if h.get('app', '').lower() != app_name.lower()]
+        # Add to front
+        history.insert(0, {
+            'app': app_name,
+            'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+        # Keep only last 5
+        history = history[:5]
+        self._save_json(APP_HISTORY_FILE, history)
+    
+    def get_app_history(self, n=2):
+        """Get last n opened apps for 'close dono' feature."""
+        history = self._load_json(APP_HISTORY_FILE, [])
+        return [h['app'] for h in history[:n]] if history else []
+    
+    def get_prev_app(self):
+        """Get the second-to-last opened app."""
+        history = self.get_app_history(2)
+        return history[1] if len(history) > 1 else None
 
     def get_memory_size(self):
         """Get total memory storage size in bytes."""

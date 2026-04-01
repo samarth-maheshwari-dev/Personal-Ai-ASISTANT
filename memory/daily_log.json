@@ -1,706 +1,162 @@
 [
   {
-    "date": "2026-03-24",
-    "time": "08:24:55",
+    "date": "2026-04-01",
+    "time": "09:42:25",
     "type": "app_opened",
     "data": {
       "app": "notepad"
     }
   },
   {
-    "date": "2026-03-24",
-    "time": "08:25:05",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "08:25:17",
-    "type": "app_opened",
-    "data": {
-      "app": "settings"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "08:25:31",
-    "type": "app_opened",
-    "data": {
-      "app": "whatsapp"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "08:25:43",
+    "date": "2026-04-01",
+    "time": "09:42:49",
     "type": "app_opened",
     "data": {
       "app": "chrome"
     }
   },
   {
-    "date": "2026-03-24",
-    "time": "08:25:52",
+    "date": "2026-04-01",
+    "time": "09:43:38",
     "type": "app_opened",
     "data": {
-      "app": "calculator"
+      "app": "chrome"
     }
   },
   {
-    "date": "2026-03-24",
-    "time": "08:27:05",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "08:47:02",
+    "date": "2026-04-01",
+    "time": "09:43:46",
     "type": "app_opened",
     "data": {
       "app": "notepad"
     }
   },
   {
-    "date": "2026-03-24",
-    "time": "08:47:12",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "08:47:24",
-    "type": "app_opened",
-    "data": {
-      "app": "settings"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "08:47:38",
-    "type": "app_opened",
-    "data": {
-      "app": "whatsapp"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "08:47:48",
-    "type": "app_opened",
-    "data": {
-      "app": "chrome"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "08:47:58",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "08:58:05",
-    "type": "app_opened",
-    "data": {
-      "app": "notepad"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "08:58:15",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "08:58:27",
-    "type": "app_opened",
-    "data": {
-      "app": "settings"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "08:58:40",
-    "type": "app_opened",
-    "data": {
-      "app": "whatsapp"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "08:58:52",
-    "type": "app_opened",
-    "data": {
-      "app": "chrome"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "08:59:01",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:15:38",
-    "type": "app_opened",
-    "data": {
-      "app": "notepad"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:15:49",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:16:01",
-    "type": "app_opened",
-    "data": {
-      "app": "settings"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:16:15",
-    "type": "app_opened",
-    "data": {
-      "app": "whatsapp"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:16:26",
-    "type": "app_opened",
-    "data": {
-      "app": "chrome"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:16:36",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:17:06",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:30:31",
+    "date": "2026-04-01",
+    "time": "09:46:11",
     "type": "youtube_search",
     "data": {
-      "query": "Python tutorial"
+      "query": "bairan song"
     }
   },
   {
-    "date": "2026-03-24",
-    "time": "09:33:32",
-    "type": "youtube_search",
-    "data": {
-      "query": "harry"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:34:28",
-    "type": "youtube_search",
-    "data": {
-      "query": "harry"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:35:22",
+    "date": "2026-04-01",
+    "time": "09:47:24",
     "type": "youtube_search",
     "data": {
       "query": "lofi music"
     }
   },
   {
-    "date": "2026-03-24",
-    "time": "09:48:55",
-    "type": "app_opened",
-    "data": {
-      "app": "notepad"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:49:05",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:49:16",
-    "type": "app_opened",
-    "data": {
-      "app": "settings"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:49:25",
-    "type": "app_opened",
-    "data": {
-      "app": "chrome"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:49:36",
-    "type": "app_opened",
-    "data": {
-      "app": "whatsapp"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:49:48",
-    "type": "app_opened",
-    "data": {
-      "app": "chrome"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:49:59",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:50:57",
-    "type": "youtube_search",
-    "data": {
-      "query": "python tutorial"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:51:49",
-    "type": "youtube_search",
-    "data": {
-      "query": "code with harry"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:53:06",
-    "type": "youtube_search",
-    "data": {
-      "query": "lofi music"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:53:57",
-    "type": "youtube_search",
-    "data": {
-      "query": "apna college"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:54:44",
-    "type": "spotify_play",
-    "data": {
-      "song": "Shape of You"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:55:22",
-    "type": "spotify_play",
-    "data": {
-      "song": "believer on Spotify"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "09:55:57",
-    "type": "spotify_play",
-    "data": {
-      "song": "tere vaste"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:13:58",
-    "type": "app_opened",
-    "data": {
-      "app": "notepad"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:14:07",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:14:19",
-    "type": "app_opened",
-    "data": {
-      "app": "settings"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:14:27",
-    "type": "app_opened",
-    "data": {
-      "app": "chrome"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:14:38",
-    "type": "app_opened",
-    "data": {
-      "app": "whatsapp"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:14:51",
-    "type": "app_opened",
-    "data": {
-      "app": "chrome"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:15:00",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:15:46",
-    "type": "youtube_search",
-    "data": {
-      "query": "python tutorial"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:16:27",
-    "type": "youtube_search",
-    "data": {
-      "query": "code with harry"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:17:04",
-    "type": "youtube_search",
-    "data": {
-      "query": "lofi music"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:17:44",
-    "type": "youtube_search",
-    "data": {
-      "query": "apna college"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:18:49",
-    "type": "spotify_play",
-    "data": {
-      "song": "Shape of You"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:19:21",
-    "type": "spotify_play",
-    "data": {
-      "song": "Tere Baasti"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:35:38",
-    "type": "spotify_play",
-    "data": {
-      "song": "Shape of You"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:36:07",
-    "type": "youtube_search",
-    "data": {
-      "query": "apna college"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:58:03",
-    "type": "spotify_play",
-    "data": {
-      "song": "Shape of You"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "10:58:33",
-    "type": "youtube_search",
-    "data": {
-      "query": "code with harry"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "13:37:09",
+    "date": "2026-04-01",
+    "time": "09:54:24",
     "type": "spotify_play",
     "data": {
       "song": "believer"
     }
   },
   {
-    "date": "2026-03-24",
-    "time": "13:37:59",
-    "type": "spotify_play",
-    "data": {
-      "song": "shape of you on Spotify"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "13:42:50",
-    "type": "spotify_play",
-    "data": {
-      "song": "shape of you"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "13:43:33",
-    "type": "spotify_play",
-    "data": {
-      "song": "believer"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "13:55:49",
-    "type": "spotify_play",
-    "data": {
-      "song": "believer"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "13:56:57",
+    "date": "2026-04-01",
+    "time": "09:55:30",
     "type": "youtube_search",
     "data": {
-      "query": "apna college"
+      "query": "bairan song"
     }
   },
   {
-    "date": "2026-03-24",
-    "time": "14:15:29",
-    "type": "spotify_play",
-    "data": {
-      "song": "believer"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "14:17:12",
-    "type": "youtube_search",
-    "data": {
-      "query": "apna college"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "14:34:02",
-    "type": "spotify_play",
-    "data": {
-      "song": "Shape of You"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "14:34:32",
-    "type": "youtube_search",
-    "data": {
-      "query": "apna college"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "14:53:53",
-    "type": "spotify_play",
-    "data": {
-      "song": "believer"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "14:54:45",
-    "type": "spotify_play",
-    "data": {
-      "song": "shape of you"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "14:55:45",
-    "type": "spotify_play",
-    "data": {
-      "song": "shape of you on Spotify"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "14:56:21",
-    "type": "youtube_search",
-    "data": {
-      "query": "anime freak"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "15:01:10",
+    "date": "2026-04-01",
+    "time": "10:08:47",
     "type": "app_opened",
     "data": {
-      "app": "notepad"
+      "app": "dono"
     }
   },
   {
-    "date": "2026-03-24",
-    "time": "15:01:19",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "15:01:31",
-    "type": "app_opened",
-    "data": {
-      "app": "settings"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "15:01:40",
-    "type": "app_opened",
-    "data": {
-      "app": "chrome"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "15:01:56",
-    "type": "app_opened",
-    "data": {
-      "app": "chrome"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "15:02:05",
-    "type": "app_opened",
-    "data": {
-      "app": "calculator"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "15:02:51",
-    "type": "youtube_search",
-    "data": {
-      "query": "python tutorial"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "15:03:28",
-    "type": "youtube_search",
-    "data": {
-      "query": "code with harry"
-    }
-  },
-  {
-    "date": "2026-03-24",
-    "time": "15:17:58",
+    "date": "2026-04-01",
+    "time": "16:51:24",
     "type": "app_opened",
     "data": {
       "app": "Notepad"
     }
   },
   {
-    "date": "2026-03-24",
-    "time": "15:19:16",
+    "date": "2026-04-01",
+    "time": "16:51:44",
     "type": "app_opened",
     "data": {
-      "app": "Chrome"
+      "app": "chrome"
     }
   },
   {
-    "date": "2026-03-24",
-    "time": "15:25:22",
+    "date": "2026-04-01",
+    "time": "16:58:21",
     "type": "app_opened",
     "data": {
       "app": "notepad"
     }
   },
   {
-    "date": "2026-03-24",
-    "time": "15:25:54",
-    "type": "spotify_play",
+    "date": "2026-04-01",
+    "time": "16:58:46",
+    "type": "app_opened",
     "data": {
-      "song": "shape of you"
+      "app": "chrome"
     }
   },
   {
-    "date": "2026-03-24",
-    "time": "17:04:55",
+    "date": "2026-04-01",
+    "time": "16:59:22",
+    "type": "app_opened",
+    "data": {
+      "app": "chrome"
+    }
+  },
+  {
+    "date": "2026-04-01",
+    "time": "16:59:30",
     "type": "app_opened",
     "data": {
       "app": "calculator"
+    }
+  },
+  {
+    "date": "2026-04-01",
+    "time": "17:17:51",
+    "type": "app_opened",
+    "data": {
+      "app": "notepad"
+    }
+  },
+  {
+    "date": "2026-04-01",
+    "time": "17:18:39",
+    "type": "app_opened",
+    "data": {
+      "app": "chrome"
+    }
+  },
+  {
+    "date": "2026-04-01",
+    "time": "17:18:47",
+    "type": "app_opened",
+    "data": {
+      "app": "calculator"
+    }
+  },
+  {
+    "date": "2026-04-01",
+    "time": "17:22:41",
+    "type": "youtube_search",
+    "data": {
+      "query": "python tutorial"
+    }
+  },
+  {
+    "date": "2026-04-01",
+    "time": "17:23:31",
+    "type": "youtube_search",
+    "data": {
+      "query": "html one shot from begginer to advance"
     }
   }
 ]

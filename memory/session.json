@@ -1,52 +1,52 @@
 [
   {
-    "date": "2026-03-24",
-    "time": "15:25:43",
-    "command": "close github.com"
+    "date": "2026-04-01",
+    "time": "17:22:10",
+    "command": "open youtube.com"
   },
   {
-    "date": "2026-03-24",
-    "time": "15:25:44",
-    "command": "set volume 40"
+    "date": "2026-04-01",
+    "time": "17:22:13",
+    "command": "open github.com"
   },
   {
-    "date": "2026-03-24",
-    "time": "15:25:54",
-    "command": "play_song shape of you on spotify"
+    "date": "2026-04-01",
+    "time": "17:22:18",
+    "command": "close dono"
   },
   {
-    "date": "2026-03-24",
-    "time": "15:25:55",
-    "command": "memory status"
+    "date": "2026-04-01",
+    "time": "17:22:59",
+    "command": "search_youtube python tutorial"
   },
   {
-    "date": "2026-03-24",
-    "time": "15:26:09",
-    "command": "open clsoe tab github.com"
+    "date": "2026-04-01",
+    "time": "17:23:55",
+    "command": "search_youtube html one shot from begginer to advance"
   },
   {
-    "date": "2026-03-24",
-    "time": "15:26:22",
-    "command": "close github.com"
+    "date": "2026-04-01",
+    "time": "17:24:05",
+    "command": "next on chrome"
   },
   {
-    "date": "2026-03-24",
-    "time": "15:26:32",
-    "command": "close spotify.com"
+    "date": "2026-04-01",
+    "time": "17:24:15",
+    "command": "next"
   },
   {
-    "date": "2026-03-24",
-    "time": "15:26:38",
-    "command": "close chrome"
+    "date": "2026-04-01",
+    "time": "17:29:31",
+    "command": "gitignore file bhi h"
   },
   {
-    "date": "2026-03-24",
-    "time": "15:26:43",
+    "date": "2026-04-01",
+    "time": "17:32:51",
+    "command": "disagreeing at the same time"
+  },
+  {
+    "date": "2026-04-01",
+    "time": "17:33:07",
     "command": "exit"
-  },
-  {
-    "date": "2026-03-24",
-    "time": "17:04:56",
-    "command": "open calculator"
   }
 ]

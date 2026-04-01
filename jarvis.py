@@ -246,6 +246,10 @@ def hinglish_to_english(text):
         'telegram', 'instagram', 'twitter', 'photos', 'paint',
         'file explorer', 'explorer', 'task manager', 'antigravity',
         'claude', 'music', 'video', 'song', 'gaana', 'gana',
+        'dono', 'both', 'sab', 'sabhi',
+        # Multi-word app names
+        'microsoft store', 'visual studio', 'windows terminal',
+        'windows powershell', 'command prompt',
     ]
 
     found_target = ''
@@ -365,6 +369,24 @@ def hinglish_to_english(text):
                 break
 
     # ── STEP 3: BUILD ENGLISH COMMAND ──
+    # Special handling for close commands
+    close_all_targets = {'sab', 'sabhi', 'all', 'sare', 'sarhi', 'sabhi apps', 'all apps', 'sab kuch'}
+    close_action_only_patterns = {'all apps', 'close all'}
+    
+    if found_action_english == 'close':
+        # Check for close all patterns first
+        t_check = t.strip().lower()
+        if any(pat in t_check for pat in close_action_only_patterns):
+            return "close all"
+        # Then check targets
+        if found_target and found_target.lower() in close_all_targets:
+            return "close all"
+        elif found_target:
+            # Single close like "close chrome" or "close both"
+            return f"close {found_target}"
+        else:
+            return "close"
+    
     if found_action_english and found_target:
         if found_action_english in ('increase volume', 'decrease volume', 'mute', 'unmute'):
             return found_action_english
@@ -397,7 +419,8 @@ FAST_COMMANDS = [
 FAST_VERBS = [
     "open ", "close ", "minimize ", "maximize ",
     "restore ", "focus ", "set volume",
-    "play on ", "pause on ", "next on ", "previous on "
+    "play on ", "pause on ", "next on ", "previous on ",
+    "search_youtube ", "play_song ",
 ]
 
 SINGLE_WORD_COMMANDS = ['play', 'pause', 'next', 'previous', 
@@ -407,6 +430,10 @@ SINGLE_WORD_COMMANDS = ['play', 'pause', 'next', 'previous',
 def is_fast_command(text):
     t = text.lower().strip()
     if t.startswith('memory'):
+        return True
+    if t.startswith('create file') or t.startswith('create a file'):
+        return True
+    if t.startswith('delete file') or (t.startswith('delete ') and '.' in t):
         return True
     if t in FAST_COMMANDS:
         return True
@@ -440,6 +467,78 @@ class DependencyManager:
 
 
 class FileManager:
+    
+    DEFAULT_DIR = os.path.join(
+        os.path.expanduser("~"), 
+        "OneDrive", "Desktop"
+    )
+    # Fallback if OneDrive Desktop doesn't exist
+    if not os.path.exists(DEFAULT_DIR):
+        DEFAULT_DIR = os.path.join(os.path.expanduser("~"), "Desktop")
+    
+    def create_file(self, filename: str, content: str = "") -> bool:
+        try:
+            if os.path.isabs(filename) or '\\' in filename or '/' in filename:
+                filepath = filename
+            else:
+                filepath = os.path.join(self.DEFAULT_DIR, filename)
+            
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(content)
+            
+            print(f"[Jarvis] ✅ File banayi: {filepath}")
+            if content:
+                lines = content.count('\n') + 1
+                chars = len(content)
+                print(f"[Jarvis] 📝 {lines} lines, {chars} characters likhe.")
+                # Show first 3 lines as preview
+                preview_lines = content.split('\n')[:3]
+                print(f"[Jarvis] Preview:")
+                for line in preview_lines:
+                    if line.strip():
+                        print(f"    {line[:60]}{('...' if len(line) > 60 else '')}")
+            else:
+                print(f"[Jarvis] 📄 Empty file banayi.")
+            return True
+            
+        except Exception as e:
+            print(f"[Jarvis] File banana fail hua: {e}")
+            return False
+    
+    def show_in_explorer(self, filename: str) -> bool:
+        try:
+            desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+            
+            possible_paths = [
+                os.path.join(desktop_path, filename),
+                filename,
+            ]
+            
+            found_path = None
+            for path in possible_paths:
+                if os.path.exists(path):
+                    found_path = path
+                    break
+            
+            if found_path:
+                subprocess.Popen(
+                    f'explorer /select,"{found_path}"'
+                )
+                print(f"[Jarvis] File Explorer mein dikha raha hoon: {filename}")
+                print(f"[Jarvis] Aap manually delete kar sakte hain.")
+                return True
+            else:
+                subprocess.Popen(f'explorer "{desktop_path}"')
+                print(f"[Jarvis] '{filename}' Desktop pe nahi mili.")
+                print(f"[Jarvis] Desktop open kar diya — manually dhundho.")
+                return False
+                
+        except Exception as e:
+            print(f"[Jarvis] Explorer open fail: {e}")
+            return False
+
     @staticmethod
     def search_and_open(search_term):
         desktop = Path(os.path.expanduser("~/Desktop"))
@@ -781,6 +880,62 @@ class BrowserManager:
                 time.sleep(0.6)
         
         print(f"[Jarvis] Tab not found: '{url_query}'")
+        return False
+
+    def _focus_tab(self, url_query):
+        """Focus a specific tab by URL without closing it."""
+        stripped_query = url_query.lower().replace("www.", "").replace("https://", "").replace("http://", "")
+        for tld in [".com", ".org", ".net", ".io", ".co", ".gov", ".edu", ".uk", ".us"]:
+            stripped_query = stripped_query.replace(tld, "")
+        stripped_query = stripped_query.split('.')[0]
+        
+        # More windows to find Chrome - it might have multiple processes
+        windows = []
+        for attempt in range(15):
+            windows = [w for w in gw.getAllWindows() if "google chrome" in w.title.lower() and w.visible]
+            if windows:
+                break
+            time.sleep(0.5)
+        
+        if not windows:
+            print(f"[Jarvis] No Chrome window found")
+            return False
+        
+        chrome_win = windows[0]
+        hwnd = chrome_win._hWnd
+        try:
+            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+            try:
+                win32gui.SetForegroundWindow(hwnd)
+            except:
+                chrome_win.activate()
+            time.sleep(0.8)  # More time to focus
+        except Exception as e:
+            print(f"[Jarvis] Failed to focus Chrome: {e}")
+            return False
+        
+        # Start from current tab (don't force ctrl+1)
+        time.sleep(0.3)
+        
+        for i in range(20):
+            try:
+                active_win = gw.getActiveWindow()
+                if active_win:
+                    title_lower = active_win.title.lower()
+                    # Check if this is the tab we want - be more lenient with matching
+                    score = fuzz.WRatio(stripped_query, title_lower)
+                    # Also check if the stripped_query is part of the title
+                    if score >= 40 or stripped_query in title_lower:
+                        print(f"[Jarvis] Focused: {url_query}")
+                        return True
+            except:
+                pass
+            
+            if i < 19:
+                pyautogui.hotkey("ctrl", "tab")
+                time.sleep(0.5)  # More time between tab switches
+        
+        print(f"[Jarvis] Tab not found to focus: '{url_query}'")
         return False
 
     def search_youtube(self, query: str, auto_play_first: bool = False):
@@ -1294,6 +1449,18 @@ class WindowManager:
             print(f"Error getting windows: {e}")
             return []
 
+    def _wait_for_window(self, query, timeout=8, interval=0.5):
+        """Poll until window appears or timeout. Returns win dict or None."""
+        import time
+        elapsed = 0
+        while elapsed < timeout:
+            win = self.find_window(query)
+            if win:
+                return win
+            time.sleep(interval)
+            elapsed += interval
+        return None
+
     def _is_excluded(self, title):
         title_lower = title.lower()
         return any(excl in title_lower for excl in self.EXCLUDED_TITLES)
@@ -1345,7 +1512,7 @@ class WindowManager:
         
         for win in candidates:
             proc_name = self._get_process_name(win["hwnd"])
-            if proc_name and query_lower in proc_name:
+            if proc_name and query_lower in proc_name.lower():
                 return win
 
         query_words = query_lower.split()
@@ -1387,6 +1554,27 @@ class WindowManager:
         
         return best_match
 
+    def focus_terminal(self):
+        """Bring Jarvis terminal window to foreground."""
+        try:
+            # Find terminal/powershell window
+            terminal_win = self.find_window('powershell')
+            if not terminal_win:
+                terminal_win = self.find_window('terminal')
+            if not terminal_win:
+                terminal_win = self.find_window('cmd')
+            
+            if terminal_win:
+                hwnd = terminal_win['hwnd']
+                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                time.sleep(0.1)
+                win32gui.SetForegroundWindow(hwnd)
+                time.sleep(0.1)
+                return True
+        except:
+            pass
+        return False
+
     def _get_process_info(self, hwnd):
         try:
             import ctypes
@@ -1398,7 +1586,7 @@ class WindowManager:
         except:
             return None
 
-    def close_window(self, query):
+    def close_window(self, query, original_name=None):
         win = self.find_window(query)
         if not win:
             print(f"Window not found: {query}")
@@ -1407,6 +1595,9 @@ class WindowManager:
         title = win["title"]
         hwnd = win["hwnd"]
         
+        # Use original_name for display if provided, otherwise use window title
+        display_name = original_name if original_name else title
+        
         # Try normal close first
         try:
             win["window"].close()
@@ -1414,7 +1605,7 @@ class WindowManager:
             # Verify it actually closed
             still_open = self.find_window(query)
             if not still_open:
-                print(f"[Jarvis] Closed: {title}")
+                print(f"[Jarvis] Closed: {display_name}")
                 return True
         except:
             pass
@@ -1425,7 +1616,7 @@ class WindowManager:
             if proc:
                 proc.kill()
                 time.sleep(0.3)
-                print(f"[Jarvis] Closed: {title}")
+                print(f"[Jarvis] Closed: {display_name}")
                 return True
         except:
             pass
@@ -1440,16 +1631,16 @@ class WindowManager:
             subprocess.run(
                 ['taskkill', '/F', '/PID', str(pid.value)],
                 capture_output=True)
-            print(f"[Jarvis] Closed: {title}")
+            print(f"[Jarvis] Closed: {display_name}")
             return True
         except:
             pass
         
-        print(f"[Jarvis] Could not close: {title}")
+        print(f"[Jarvis] Could not close: {display_name}")
         return False
 
     def minimize_window(self, query):
-        win = self.find_window(query)
+        win = self.find_window(query) or self._wait_for_window(query, timeout=8)
         if not win:
             print(f"Window not found: {query}")
             return False
@@ -1467,7 +1658,7 @@ class WindowManager:
             return False
 
     def maximize_window(self, title_keyword):
-        matched = self.find_window(title_keyword)
+        matched = self.find_window(title_keyword) or self._wait_for_window(title_keyword, timeout=8)
         if not matched:
             print(f"[Jarvis] Window not found: {title_keyword}")
             return False
@@ -1505,7 +1696,7 @@ class WindowManager:
             return False
 
     def restore_window(self, query):
-        win = self.find_window(query)
+        win = self.find_window(query) or self._wait_for_window(query, timeout=8)
         if not win:
             print(f"Window not found: {query}")
             return False
@@ -1523,7 +1714,7 @@ class WindowManager:
             return False
 
     def focus_window(self, query):
-        win = self.find_window(query)
+        win = self.find_window(query) or self._wait_for_window(query, timeout=8)
         if not win:
             print(f"Window not found: {query}")
             return False
@@ -1563,11 +1754,14 @@ class Jarvis:
         self.memory = MemoryManager()
         self.running = True
         self._last_opened_app = self.memory.get_last_app()
+        self._prev_opened_app = None
         self.last_was_hinglish = False
         self._brain_call_count = 0
         self._processing_input = False
         self._yt_auto_play = False
         self._yt_auto_pick = None
+        # Track apps opened in CURRENT command chain (for "close dono")
+        self._chain_opened_apps = []
 
     def _hinglish_print(self, english_msg, hinglish_msg):
         if self.last_was_hinglish and hinglish_msg:
@@ -1596,6 +1790,39 @@ class Jarvis:
         cmd = parts[0].lower()
         arg = parts[1] if len(parts) > 1 else None
         return cmd, arg
+
+    def _create_file_with_content(self, filename, topic):
+        import os
+        
+        content_prompt = f"""Generate complete, detailed content for a file about: {topic}
+        
+Format it properly with:
+- Clear headings and sections
+- Complete explanations  
+- Code examples if relevant
+- No placeholder text — real useful content only
+
+Generate the full file content now:"""
+        
+        try:
+            from brain import think
+            result = think(content_prompt)
+            if result.get('type') == 'conversation':
+                content = result.get('reply', '').strip()
+                provider = result.get('provider', 'Unknown')
+                print(f"[Generating file using {provider}...]")
+            else:
+                content = f"# {topic}\n\nContent about {topic}."
+        except Exception as e:
+            content = f"# {topic}\n\nContent about {topic}."
+        
+        filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        print(f"[Jarvis] File created: {filepath}")
+        print(f"[Jarvis] Content preview: {content[:100]}...")
+        return filepath
 
     def handle_command(self, cmd, arg):
         if cmd in ('close', 'band', 'bandh', 'hatao'):
@@ -1651,12 +1878,16 @@ class Jarvis:
             # URL check second
             elif self.browser_manager.is_url(arg):
                 self.browser_manager.open_url(arg)
+                # Track URL in chain for "close dono" feature
+                if arg not in self._chain_opened_apps:
+                    self._chain_opened_apps.append(arg)
             # App check third
             else:
                 # Check if already open — focus instead of reopen
                 existing = self.window_manager.find_window(arg)
                 if existing and not self.browser_manager.is_url(arg):
                     self.window_manager.focus_window(arg)
+                    self._prev_opened_app = self._last_opened_app
                     self._last_opened_app = arg
                     self.memory.set_last_app(arg)
                     print(f"[Jarvis] Already open, focused: {arg}")
@@ -1665,14 +1896,121 @@ class Jarvis:
                 # Not open — proceed with normal open
                 result = self.app_manager.open_app(arg)
                 if result is not False:
+                    self._prev_opened_app = self._last_opened_app
                     self._last_opened_app = arg
                     self.memory.set_last_app(arg)
                     self.memory.log_activity('app_opened', {'app': arg})
+                    # Track in chain for "close dono" feature
+                    if arg not in self._chain_opened_apps:
+                        self._chain_opened_apps.append(arg)
                 else:
                     print("[Jarvis] Tip: If this is a file, try: open filename.ext")
                 
         elif cmd == "close":
             target = arg
+            close_all_patterns = [
+                'sab', 'sabhi', 'all', 'sare', 'sarhi', 'sabhi apps',
+                'sabhi apps band karo', 'sab band karo', 'sabhi band karo',
+                'all apps', 'close all', 'sab kuch band karo'
+            ]
+            if target and target.strip().lower() in close_all_patterns:
+                windows = self.window_manager.get_windows()
+                
+                # Get all windows but filter out system/terminal windows
+                # Use WindowManager's exclusion logic + extra filters
+                never_close_keywords = [
+                    'jarvis', 'powershell', 'cmd', 'terminal', 
+                    'visual studio', 'program manager', 'rainmeter', 
+                    'desktop', 'explorer', 'settings', 'windows input',
+                    'input experience', 'search', 'start', 'notification',
+                    'task view', 'calendar', 'phone', 'maps', 'weather',
+                    'store', 'microsoft store', 'edge', 'chrome',
+                    '.ini', 'antigravity', 'mond', 'clock', 'weather', 'recycle bin',
+                ]
+                
+                # Filter windows to close
+                apps_to_close = []
+                for w in windows:
+                    title = w.get('title', '')
+                    title_lower = title.lower()
+                    
+                    # Skip empty titles
+                    if not title.strip():
+                        continue
+                    
+                    # Skip if matches never_close keywords
+                    if any(kw in title_lower for kw in never_close_keywords):
+                        continue
+                    
+                    # Skip system windows with no meaningful title
+                    if len(title.strip()) < 3:
+                        continue
+                    
+                    apps_to_close.append(w)
+                
+                if not apps_to_close:
+                    print("[Jarvis] Koi close karne layak app nahi mila.")
+                    return
+                
+                # Show what we're closing
+                app_names = [w['title'] for w in apps_to_close]
+                print(f"[Jarvis] {len(app_names)} apps band kar raha hoon: {app_names}")
+                
+                # Close each app
+                for w in apps_to_close:
+                    title = w.get('title', '')
+                    hwnd = w.get('hwnd')
+                    try:
+                        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                        win32gui.SetForegroundWindow(hwnd)
+                        time.sleep(0.2)
+                    except:
+                        pass
+                    try:
+                        w['window'].close()
+                        print(f"[Jarvis] Closed: {title}")
+                    except:
+                        try:
+                            proc = self.window_manager._get_process_info(hwnd)
+                            if proc:
+                                proc.kill()
+                                print(f"[Jarvis] Closed: {title}")
+                        except:
+                            print(f"[Jarvis] Could not close: {title}")
+                    time.sleep(0.3)
+                return
+            
+            if target and target.strip().lower() in ('dono', 'dono ko', 'both', '__dono__'):
+                # First check chain apps (from current command like "open chrome then open notepad then close dono")
+                apps_to_close = []
+                if self._chain_opened_apps:
+                    # Reverse order - last opened closes first (github.com first, then youtube.com)
+                    apps_to_close = list(reversed(self._chain_opened_apps))
+                else:
+                    # Fall back to memory's app history
+                    app_history = self.memory.get_app_history(2)
+                    if len(app_history) >= 2:
+                        app_history = list(reversed(app_history))
+                
+                if not apps_to_close:
+                    print("[Jarvis] Koi app track nahi hai. Pehle koi app kholo.")
+                    return
+                
+                print(f"[Jarvis] Closing: {', '.join(apps_to_close)}")
+                
+                # For browser tabs, we need special handling - close without cycling tabs
+                for app in apps_to_close:
+                    if self.browser_manager.is_url(app):
+                        # Directly attempt to close the tab - it will auto-focus first
+                        self.browser_manager.close_tab(app)
+                    else:
+                        self.window_manager.focus_window(app)
+                        time.sleep(0.3)
+                        self.window_manager.close_window(app, original_name=app)
+                    time.sleep(0.5)  # Wait between closes
+                # Clear chain after closing
+                self._chain_opened_apps.clear()
+                return
             if not target or target == '__last_app__' or (target.lower() in HINDI_PARTICLES):
                 target = self._last_opened_app or self.memory.get_last_app()
                 if not target:
@@ -1962,11 +2300,13 @@ class Jarvis:
                     print("[Jarvis] Usage: memory limit <MB>")
 
             elif arg.startswith('remember '):
-                parts = arg[9:].split(' ', 1)
-                if len(parts) == 2:
-                    self.memory.remember(parts[0], parts[1])
-                else:
-                    print("[Jarvis] Usage: memory remember <key> <value>")
+                parts = arg[9:].strip().split()
+                if len(parts) < 2:
+                    print("[Memory] Usage: memory remember <key> <value>")
+                    return
+                value = parts[-1]
+                key = ' '.join(parts[:-1])
+                self.memory.remember(key, value)
 
             elif arg.startswith('forget '):
                 key = arg[7:].strip()
@@ -1976,7 +2316,7 @@ class Jarvis:
                     print("[Jarvis] Usage: memory forget <key>")
 
             elif arg.startswith('recall '):
-                key = arg[7:].strip()
+                key = arg[7:]
                 if key:
                     val = self.memory.recall(key)
                     if val:
@@ -1999,6 +2339,106 @@ class Jarvis:
                 print("  memory limit 500                 - Set storage limit to 500MB")
                 print("  memory limit                      - Show current limit")
             
+        elif cmd in ("create_file", "create"):
+            if not arg:
+                print("[Jarvis] Usage: create file <filename>")
+                print("[Jarvis] Example: create file notes.txt")
+                return
+            
+            arg_clean = re.sub(r'^file\s+', '', arg, flags=re.IGNORECASE).strip()
+            
+            content = ""
+            filename = arg_clean
+            
+            # Single unified pattern that catches all variations with explicit file extension
+            write_match = re.search(
+                r'^(.+?\.[\w]+)\s+(?:and\s+)?(?:write|type|mein\s+likho|likho|likhna|with\s+content)\s+(.+)$',
+                arg_clean,
+                re.IGNORECASE | re.DOTALL
+            )
+            
+            if write_match:
+                filename = write_match.group(1).strip()
+                raw_content = write_match.group(2).strip()
+                
+                # Decide: needs brain or direct text?
+                code_keywords = [
+                    'code', 'program', 'script', 'function', 'class',
+                    'write a', 'make a', 'generate', 'create a',
+                    'c++', 'python', 'java', 'html', 'css', 'javascript',
+                    'sql', 'cpp', 'algorithm', 'sort', 'search',
+                ]
+                needs_brain = any(kw in raw_content.lower() for kw in code_keywords)
+                
+                if needs_brain:
+                    # Generate via Cerebras API directly
+                    print(f"[Jarvis] Generating content...")
+                    try:
+                        import requests
+                        from dotenv import load_dotenv
+                        load_dotenv()
+                        CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "")
+                        url = "https://api.cerebras.ai/v1/chat/completions"
+                        headers = {
+                            "Authorization": f"Bearer {CEREBRAS_API_KEY}",
+                            "Content-Type": "application/json"
+                        }
+                        body = {
+                            "model": "llama3.1-8b",
+                            "messages": [
+                                {
+                                    "role": "system",
+                                    "content": "Generate ONLY the requested content. No explanation. No markdown backticks. Just raw clean content ready to save in a file."
+                                },
+                                {"role": "user", "content": raw_content}
+                            ],
+                            "temperature": 0.3,
+                            "max_tokens": 2000
+                        }
+                        r = requests.post(url, json=body, headers=headers, timeout=30)
+                        if r.status_code == 200:
+                            content = r.json()["choices"][0]["message"]["content"].strip()
+                            # Strip markdown code fences
+                            content = re.sub(r'^```\w*\n?', '', content)
+                            content = re.sub(r'\n?```$', '', content)
+                            content = content.strip()
+                        else:
+                            content = raw_content
+                    except Exception as e:
+                        print(f"[Jarvis] Content generation error: {e}")
+                        content = raw_content
+                else:
+                    # Direct text — write as-is
+                    content = raw_content
+            else:
+                filename = arg_clean
+                topic = filename.rsplit('.', 1)[0] if '.' in filename else filename
+                print(f"[Jarvis] Generating content for {filename}...")
+                self._create_file_with_content(filename, topic)
+                self.memory.log_activity('file_created', {
+                    'filename': filename,
+                    'has_content': True
+                })
+                return
+            
+            if '.' not in filename:
+                print(f"[Jarvis] Extension missing. Example: notes.txt, code.py")
+                return
+            
+            self.file_manager.create_file(filename, content)
+            self.memory.log_activity('file_created', {
+                'filename': filename,
+                'has_content': bool(content)
+            })
+        
+        elif cmd == "delete_file":
+            if not arg:
+                print("[Jarvis] Konsi file delete karni hai?")
+                return
+            filename = re.sub(r'^file\s+', '', arg, 
+                             flags=re.IGNORECASE).strip()
+            self.file_manager.show_in_explorer(filename)
+
         else:
             print(f"Unknown command: {cmd}")
 
@@ -2462,83 +2902,79 @@ class Jarvis:
             self.handle_command(cmd, arg)
 
     def preprocess_youtube_compound(self, text: str) -> str:
-        """
-        Detect and rewrite YouTube compound commands.
-        """
+        """Detect YouTube commands and rewrite to search_youtube format."""
         t = text.lower().strip()
-        
+
         ordinal_map = {
             'first': '1', '1st': '1', 'pehla': '1', 'pehli': '1',
             'second': '2', '2nd': '2', 'doosra': '2', 'doosri': '2',
             'third': '3', '3rd': '3', 'teesra': '3', 'teesri': '3',
             'fourth': '4', '4th': '4', 'chautha': '4',
             'fifth': '5', '5th': '5', 'paanchwa': '5',
+            'sixth': '6', '6th': '6', 'seventh': '7', '7th': '7',
+            'eighth': '8', '8th': '8', 'ninth': '9', '9th': '9',
+            'tenth': '10', '10th': '10',
         }
 
-        pattern_nth = re.search(
-            r'(?:youtube\s+pe\s+|on\s+youtube\s*)?'
-            r'(.+?)\s+(?:search\s+karo\s+)?'
-            r'(?:and|aur|then|or)?\s*'
-            r'play\s+(?:the\s+)?(\w+)\s*(?:video|wala|wali)?',
-            t
+        # Pattern 1: "search X on youtube and play Nth video"
+        play_nth = re.search(
+            r'^search\s+(.+?)\s+on\s+(?:youtube|yt)\s+'
+            r'(?:and\s+)?play\s+(?:the\s+)?(\w+)\s*(?:video)?$',
+            t, re.IGNORECASE
         )
-        if pattern_nth:
-            query = pattern_nth.group(1).strip()
-            query = re.sub(r'^search\s+', '', query, flags=re.IGNORECASE)
-            query = re.sub(r'\s+(?:on|pe|par)\s+(?:youtube|yt)$', '',
-                          query, flags=re.IGNORECASE).strip()
-            pick_raw = pattern_nth.group(2).strip()
+        if play_nth:
+            query = play_nth.group(1).strip()
+            pick_raw = play_nth.group(2).strip().lower()
             pick_num = ordinal_map.get(pick_raw, pick_raw)
             if pick_num.isdigit():
                 self._yt_auto_pick = pick_num
                 return f"search_youtube {query}"
 
-        patterns = [
-            (r'(?:youtube\s+pe\s+|youtube\s+mein\s+|on\s+youtube\s*)?'
-             r'(?:search\s+)?(.+?)\s+(?:search\s+karo\s+)?'
-             r'(?:and\s+|aur\s+|or\s+)?'
-             r'(?:play\s+|chala\s+|chalao\s+)?'
-             r'(?:first|pehli?|pehla?|1st|top)\s+'
-             r'(?:video\s+)?(?:chalado|chalao|play\s+karo|lagao)?',
-             True),
-            (r'(.+?)\s+(?:search\s+karo|search\s+kar|dhundo)\s+'
-             r'(?:on\s+youtube|youtube\s+pe|yt\s+pe)',
-             False),
-        ]
-        
-        for pattern, autoplay in patterns:
-            match = re.search(pattern, t)
-            if match:
-                query = match.group(1).strip()
-                if autoplay:
-                    self._yt_auto_play = True
-                    return f"search_youtube {query}"
-                return f"search_youtube {query}"
-        
-        # "search X on youtube then play 5" → search_youtube X, then play_number 5
-        pattern_then_play = r'search\s+(.+?)\s+(?:on\s+youtube|youtube\s+pe)?\s*then\s+play\s+(\d+)'
-        match = re.search(pattern_then_play, t)
-        if match:
-            query = match.group(1).strip()
-            num = match.group(2)
-            # Return as single search command with number embedded
-            return f"search_youtube {query} --pick {num}"
-        
-        # Legacy fallback
-        pattern1 = r'open\s+youtube.*?search\s+(.+?)\s+(?:and\s+)?play\s+(?:first|pehla|pehli)'
-        match = re.search(pattern1, t)
-        if match:
-            query = match.group(1).strip()
+        # Pattern 2: "search X on youtube" plain — no autoplay
+        plain_search = re.search(
+            r'^search\s+(.+?)\s+on\s+(?:youtube|yt)$',
+            t, re.IGNORECASE
+        )
+        if plain_search:
+            query = plain_search.group(1).strip()
+            return f"search_youtube {query}"
+
+        # Pattern 3: "search X on youtube then play N"
+        then_play = re.search(
+            r'^search\s+(.+?)\s+on\s+(?:youtube|yt)\s+then\s+play\s+(\w+)$',
+            t, re.IGNORECASE
+        )
+        if then_play:
+            query = then_play.group(1).strip()
+            pick_raw = then_play.group(2).strip().lower()
+            pick_num = ordinal_map.get(pick_raw, pick_raw)
+            if pick_num.isdigit():
+                self._yt_auto_pick = pick_num
+            else:
+                self._yt_auto_play = True
+            return f"search_youtube {query}"
+
+        # Pattern 4: "search X on youtube and play first" → autoplay
+        autoplay_first = re.search(
+            r'^search\s+(.+?)\s+on\s+(?:youtube|yt)\s+'
+            r'(?:and\s+)?(?:play\s+)?(?:first|pehla|pehli|1st)(?:\s+video)?$',
+            t, re.IGNORECASE
+        )
+        if autoplay_first:
+            query = autoplay_first.group(1).strip()
             self._yt_auto_play = True
             return f"search_youtube {query}"
-        
-        pattern2 = r'open\s+youtube.*?search\s+(.+)'
-        match = re.search(pattern2, t)
-        if match:
-            query = match.group(1).strip()
-            query = re.sub(r'\s+and\s+play.*$', '', query).strip()
-            return f"open youtube.com then search_youtube {query}"
-        
+
+        # Pattern 5: "youtube pe X search karo"
+        yt_pe = re.search(
+            r'(?:youtube\s+pe|yt\s+pe)\s+(.+?)\s+'
+            r'(?:search\s+karo|dhundo|search\s+kar)',
+            t, re.IGNORECASE
+        )
+        if yt_pe:
+            query = yt_pe.group(1).strip()
+            return f"search_youtube {query}"
+
         return text
 
     def run(self):
@@ -2557,6 +2993,9 @@ class Jarvis:
                 
                 self._processing_input = True
                 
+                # Clear chain apps from previous command
+                self._chain_opened_apps.clear()
+                
                 user_input = user_input.rstrip('\\').strip()
                 
                 # In run(), add this BEFORE chain splitting:
@@ -2567,6 +3006,17 @@ class Jarvis:
                 if lowered.startswith('memory clear') or lowered.startswith('memory limit'):
                     actual_cmd = user_input
                     self.parse_and_run(actual_cmd)
+                    self.memory.add_command(user_input)
+                    self._processing_input = False
+                    continue
+                
+                # Add direct parse for delete file pattern - skip brain entirely
+                delete_match = re.match(
+                    r'^delete\s+(?:file\s+)?(\S+\.\w+)$', 
+                    user_input.strip(), re.IGNORECASE)
+                if delete_match:
+                    filename = delete_match.group(1)
+                    self.file_manager.show_in_explorer(filename)
                     self.memory.add_command(user_input)
                     self._processing_input = False
                     continue
@@ -2601,17 +3051,30 @@ class Jarvis:
                     if is_url and not has_verb:
                         part = "open " + part
                     
+                    # Fast command check FIRST — before any translation
+                    # This prevents hinglish_to_english from corrupting
+                    # search_youtube/play_song commands
+                    if is_fast_command(part):
+                        processed_parts.append(part)
+                        continue
+                    
+                    if part.lower().startswith('memory'):
+                        processed_parts.append("__brain_processed__" + part)
+                        continue
+                    
                     translated = hinglish_to_english(part)
                     
                     fast_volume_commands = [
                         'increase volume', 'decrease volume', 'mute', 'unmute',
                         'volume up', 'volume down', 'close',
                     ]
-                    if translated != part and translated.lower() in fast_volume_commands:
-                        processed_parts.append(translated)
-                        continue
-                    
-                    if translated != part and translated.lower().startswith('set volume'):
+                    ACTION_VERBS = ['open ', 'close ', 'minimize ', 'maximize ',
+                                    'restore ', 'focus ']
+                    if translated != part and (
+                        translated.lower() in fast_volume_commands or
+                        translated.lower().startswith('set volume') or
+                        any(translated.lower().startswith(v) for v in ACTION_VERBS)
+                    ):
                         processed_parts.append(translated)
                         continue
                     
@@ -2638,8 +3101,13 @@ class Jarvis:
                     
                     if brain_result.get("type") == "conversation":
                         reply = brain_result.get('reply', '').strip()
+                        provider = brain_result.get('provider', 'Unknown')
+                        source = brain_result.get('source', 'conversation')
                         if reply:
-                            print(f"[Jarvis] {reply}")
+                            if source == 'web_search':
+                                print(f"[{provider} via Web Search] {reply}")
+                            else:
+                                print(f"[{provider}] {reply}")
                         else:
                             # Retry with next provider if empty reply
                             print(f"[Jarvis] Ek second...")
@@ -2735,12 +3203,19 @@ class Jarvis:
                         except Exception as e:
                             print(f"[Jarvis] Command failed: ({actual_cmd})")
                     print("[Jarvis] All done.")
+                    # Focus terminal back after running chain commands
+                    self.window_manager.focus_terminal()
+                    time.sleep(0.2)
                 else:
                     for cmd_str in processed_parts:
                         if cmd_str is not None and cmd_str != '__brain_processed__':
                             actual_cmd = cmd_str.replace("__brain_processed__", "")
                             self.parse_and_run(actual_cmd)
                             self.memory.add_command(actual_cmd)
+                    
+                    # Focus terminal back after command execution
+                    self.window_manager.focus_terminal()
+                    time.sleep(0.2)
                 
                 # Reset after processing all parts:
                 self._brain_call_count = 0
