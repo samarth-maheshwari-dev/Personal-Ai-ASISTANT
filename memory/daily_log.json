@@ -637,5 +637,76 @@
       "old_name": "sort.py",
       "new_name": "bubble_sort.py"
     }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "14:17:59",
+    "type": "file_created",
+    "data": {
+      "filename": "data.csv",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "14:19:48",
+    "type": "file_created",
+    "data": {
+      "filename": "python_basics.pptx",
+      "has_content": true,
+      "type": "pptx"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "14:19:50",
+    "type": "file_created",
+    "data": {
+      "filename": "dsa.pptx",
+      "has_content": true,
+      "type": "pptx"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "14:19:53",
+    "type": "file_created",
+    "data": {
+      "filename": "marketing.pptx",
+      "has_content": true,
+      "type": "pptx"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "15:31:11",
+    "type": "file_deleted",
+    "data": {
+      "filename": "byby.txt"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "15:43:08",
+    "type": "file_deleted",
+    "data": {
+      "filename": "taxi.txt"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "15:43:21",
+    "type": "file_deleted",
+    "data": {
+      "filename": "mexi.txt"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "15:43:39",
+    "type": "file_deleted",
+    "data": {
+      "filename": "sexy.txt"
+    }
   }
 ]

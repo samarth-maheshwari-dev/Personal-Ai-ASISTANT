@@ -31,7 +31,7 @@ def install_packages(packages):
             subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
 
 
-install_packages(["pyautogui", "pygetwindow", "pywin32", "rapidfuzz", "psutil", "winrt-runtime", "winrt-Windows.Media.Control", "winrt-Windows.Foundation", "winrt-Windows.Foundation.Collections", "python-dotenv", "requests", "yt-dlp", "ddgs", "pycaw", "comtypes"])
+install_packages(["pyautogui", "pygetwindow", "pywin32", "rapidfuzz", "psutil", "winrt-runtime", "winrt-Windows.Media.Control", "winrt-Windows.Foundation", "winrt-Windows.Foundation.Collections", "python-dotenv", "requests", "yt-dlp", "ddgs", "pycaw", "comtypes", "python-pptx", "send2trash"])
 
 
 import pyautogui
@@ -160,6 +160,22 @@ def hinglish_to_english(text):
     original = text.strip()
     t = text.lower().strip()
 
+    # BUG 4 FIX: File find pattern
+    kahan_match = re.search(
+        r'(\S+)\s+(?:file\s+)?(?:kahan\s+hai|kahan\s+h|dhundo|dhundho|search\s+karo)',
+        t, re.IGNORECASE
+    )
+    if kahan_match:
+        return f"find {kahan_match.group(1).strip()}"
+    
+    # BUG 4 FIX: File delete pattern
+    hatao_match = re.search(
+        r'(\S+\.\w+)\s+(?:hatao|delete\s+karo|mita\s+do|mitao|hata\s+do)',
+        t, re.IGNORECASE
+    )
+    if hatao_match:
+        return f"delete {hatao_match.group(1).strip()}"
+
     multi_word_volume = {
         'awaaz band karo': 'mute',
         'awaaz band kar': 'mute',
@@ -232,6 +248,20 @@ def hinglish_to_english(text):
     t = re.sub(
         r'(\S+\.\w+)\s+(?:replace\s+karo|badal\s+do|overwrite\s+karo)\s+(.+)',
         r'update \1 replace \2',
+        t
+    )
+
+    # Find/search file patterns
+    t = re.sub(
+        r'(\S+)\s+(?:file\s+)?(?:kahan\s+hai|dhundo|dhundho|search\s+karo)',
+        r'find \1',
+        t
+    )
+
+    # Delete file patterns
+    t = re.sub(
+        r'(\S+\.\w+)\s+(?:hatao|delete\s+karo|mita\s+do|mitao)',
+        r'delete \1',
         t
     )
 
@@ -372,6 +402,11 @@ def hinglish_to_english(text):
         'kam karo': 'decrease volume',
         'zyada karo': 'increase volume',
         'wapas lao': 'restore',
+        # FIX 4: Delete patterns
+        'mita do': 'delete_trigger',
+        'mita dena': 'delete_trigger',
+        'hatao': 'delete_trigger',
+        'delete karo': 'delete_trigger',
     }
 
     found_action_english = ''
@@ -381,6 +416,13 @@ def hinglish_to_english(text):
         if phrase in t:
             found_action_english = eng
             break
+    
+    # FIX 4: Handle delete_trigger after multi_word_map check
+    if found_action_english == 'delete_trigger':
+        if found_target:
+            return f"delete {found_target}"
+        else:
+            return "delete"
 
     # Then check individual words (split by space only — no substring replace)
     if not found_action_english:
@@ -445,7 +487,9 @@ FAST_VERBS = [
     "restore ", "focus ", "set volume",
     "play on ", "pause on ", "next on ", "previous on ",
     "search_youtube ", "play_song ",
-    "rename ", "update ",
+    "rename ", "update ", "find ", "find this", "find that",
+    "delete ", "delete all", "delete this", "delete it",
+    "search file ", "read ",
 ]
 
 SINGLE_WORD_COMMANDS = ['play', 'pause', 'next', 'previous', 
@@ -481,11 +525,11 @@ def split_into_parts(user_input):
     parts = re.split(r'\s+then\s+|\s+phir\s+', user_input)
     flattened = []
     for segment in parts:
-        # BUG 1 FIX: Don't split "create file X and write Y" on "and"
-        # If segment starts with create, keep it whole
         seg_lower = segment.lower().strip()
-        if seg_lower.startswith('create file') or seg_lower.startswith('create a file'):
-            # Keep as one segment, don't split on and/aur/or
+        # Don't split these commands on "and"
+        if (seg_lower.startswith('create file') or seg_lower.startswith('create a file') or
+            seg_lower.startswith('find ') or seg_lower.startswith('delete ') or
+            seg_lower.startswith('search file')):
             if segment.strip():
                 flattened.append(segment.strip())
         else:
@@ -558,6 +602,156 @@ class FileManager:
             
         except Exception as e:
             print(f"[Jarvis] File banana fail hua: {e}")
+            return False
+
+    def create_pptx(self, filename: str, topic: str) -> bool:
+        """AI generates slide content → python-pptx builds presentation"""
+        try:
+            import json
+            import requests
+            from dotenv import load_dotenv
+            from pptx import Presentation
+            from pptx.util import Inches, Pt
+            from pptx.dml.color import RGBColor
+            
+            load_dotenv()
+            CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "")
+            
+            print(f"[Jarvis] Generating PPT slides about: {topic}...")
+            
+            # Step 1: Generate slide content as JSON
+            system_prompt = (
+                "You output ONLY a valid JSON array. No explanation. No markdown. No backticks. "
+                "Format: [{\"title\": \"Slide Title\", \"bullets\": [\"point 1\", \"point 2\", \"point 3\"]}, ...] "
+                "Generate 8-12 slides. Each slide has a title and 3-5 bullet points. "
+                "Keep bullets concise, max 10 words each."
+            )
+            
+            try:
+                resp = requests.post(
+                    "https://api.cerebras.ai/v1/chat/completions",
+                    json={
+                        "model": "llama3.1-8b",
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": f"Create presentation slides about: {topic}"}
+                        ],
+                        "temperature": 0.3,
+                        "max_tokens": 2000
+                    },
+                    headers={
+                        "Authorization": f"Bearer {CEREBRAS_API_KEY}",
+                        "Content-Type": "application/json"
+                    },
+                    timeout=30
+                )
+                
+                if resp.status_code == 200:
+                    slides_text = resp.json()["choices"][0]["message"]["content"].strip()
+                    # Strip markdown fences
+                    slides_text = re.sub(r'^```\w*\n?', '', slides_text)
+                    slides_text = re.sub(r'\n?```$', '', slides_text).strip()
+                    slides = json.loads(slides_text)
+                else:
+                    raise Exception(f"API status {resp.status_code}")
+                    
+            except Exception as e:
+                print(f"[Jarvis] Slide generation failed: {e}")
+                slides = [
+                    {"title": topic, "bullets": ["Overview", "Key Concepts", "Examples", "Summary"]}
+                ]
+            
+            # Step 2: Build PPTX
+            prs = Presentation()
+            prs.slide_width = Inches(13.33)
+            prs.slide_height = Inches(7.5)
+            
+            THEME_BG = RGBColor(0x0d, 0x1b, 0x2a)
+            THEME_TITLE = RGBColor(0x00, 0xff, 0xff)
+            THEME_BULLET = RGBColor(0xe0, 0xe0, 0xe0)
+            THEME_ACCENT = RGBColor(0x00, 0xb4, 0xd8)
+            
+            total_slides = len(slides)
+            
+            for idx, slide_data in enumerate(slides):
+                slide = prs.slides.add_slide(prs.slide_layouts[6])  # blank layout
+                
+                # Background rectangle
+                bg_shape = slide.shapes.add_shape(1, Inches(0), Inches(0), Inches(13.33), Inches(7.5))
+                bg_shape.fill.solid()
+                bg_shape.fill.fore_color.rgb = THEME_BG
+                bg_shape.line.fill.background()
+                
+                if idx == 0:
+                    # Title slide
+                    title_box = slide.shapes.add_textbox(Inches(1), Inches(2.5), Inches(11), Inches(2))
+                    tf = title_box.text_frame
+                    p = tf.paragraphs[0]
+                    p.text = slide_data.get("title", topic)
+                    p.font.size = Pt(44)
+                    p.font.bold = True
+                    p.font.color.rgb = THEME_TITLE
+                    
+                    sub_box = slide.shapes.add_textbox(Inches(1), Inches(4.8), Inches(11), Inches(1))
+                    tf = sub_box.text_frame
+                    p = tf.paragraphs[0]
+                    p.text = "Prepared by JARVIS"
+                    p.font.size = Pt(20)
+                    p.font.color.rgb = THEME_ACCENT
+                else:
+                    # Content slides
+                    # Slide number
+                    num_box = slide.shapes.add_textbox(Inches(11.5), Inches(0.1), Inches(1.5), Inches(0.4))
+                    tf = num_box.text_frame
+                    p = tf.paragraphs[0]
+                    p.text = f"{idx + 1}/{total_slides}"
+                    p.font.size = Pt(12)
+                    p.font.color.rgb = THEME_ACCENT
+                    
+                    # Title
+                    title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(11), Inches(1))
+                    tf = title_box.text_frame
+                    p = tf.paragraphs[0]
+                    p.text = slide_data.get("title", "Slide")
+                    p.font.size = Pt(32)
+                    p.font.bold = True
+                    p.font.color.rgb = THEME_TITLE
+                    
+                    # Horizontal line
+                    line_shape = slide.shapes.add_shape(1, Inches(0.5), Inches(1.3), Inches(12), Inches(0.03))
+                    line_shape.fill.solid()
+                    line_shape.fill.fore_color.rgb = THEME_ACCENT
+                    line_shape.line.fill.background()
+                    
+                    # Bullets
+                    bullets_box = slide.shapes.add_textbox(Inches(0.7), Inches(1.5), Inches(11.5), Inches(5.5))
+                    tf = bullets_box.text_frame
+                    tf.word_wrap = True
+                    
+                    bullets = slide_data.get("bullets", [])
+                    for i, bullet in enumerate(bullets):
+                        if i == 0:
+                            p = tf.paragraphs[0]
+                        else:
+                            p = tf.add_paragraph()
+                        p.text = "▶  " + bullet
+                        p.font.size = Pt(22)
+                        p.font.color.rgb = THEME_BULLET
+                        p.space_before = Pt(12)
+            
+            # Save
+            filepath = os.path.join(self.DEFAULT_DIR, filename)
+            prs.save(filepath)
+            
+            print(f"[Jarvis] ✅ PPT ready: {filepath} ({total_slides} slides)")
+            try:
+                os.startfile(filepath)
+            except:
+                pass
+            return True
+            
+        except Exception as e:
+            print(f"[Jarvis] PPT creation failed: {e}")
             return False
 
     def create_pdf(self, filename: str, topic: str) -> bool:
@@ -703,6 +897,70 @@ class FileManager:
                 pass
             return False
     
+    def search_file_everywhere(self, filename: str):
+        """Search file across all user dirs. Returns full path or None."""
+        import os
+        from rapidfuzz import fuzz
+
+        # Check if D: exists
+        d_exists = os.path.exists("D:\\")
+        
+        SEARCH_DIRS = [
+            os.path.expanduser("~/OneDrive/Desktop"),
+            os.path.expanduser("~/Desktop"),
+            os.path.expanduser("~/Downloads"),
+            os.path.expanduser("~/Documents"),
+            os.path.expanduser("~/OneDrive/Documents"),
+            os.path.expanduser("~/Pictures"),
+            os.path.expanduser("~/OneDrive/Pictures"),
+            os.path.expanduser("~/Music"),
+            os.path.expanduser("~/Videos"),
+        ]
+        
+        # Add D: drive if exists
+        if d_exists:
+            SEARCH_DIRS.extend([
+                "D:\\",
+                "D:\\Downloads",
+                "D:\\Documents",
+                "D:\\Desktop",
+            ])
+
+        SKIP_DIRS = {
+            '.venv', 'node_modules', '__pycache__', '.git',
+            'site-packages', 'dist-info', 'dist', 'build',
+            '.idea', '.vs', 'Modules', 'WinSxS',
+            'Windows', 'Program Files', 'Program Files (x86)',
+            'Intel', 'AMD', 'NVIDIA', 'PerfLogs',
+        }
+
+        all_files = []
+        for d in SEARCH_DIRS:
+            if os.path.exists(d):
+                try:
+                    for root, dirs, files in os.walk(d):
+                        dirs[:] = [x for x in dirs if x not in SKIP_DIRS]
+                        for f in files:
+                            all_files.append(os.path.join(root, f))
+                except (PermissionError, OSError):
+                    continue
+
+        # Exact match first (case insensitive)
+        for fp in all_files:
+            if os.path.basename(fp).lower() == filename.lower():
+                return fp
+
+        # Fuzzy match fallback
+        best_score = 0
+        best_path = None
+        for fp in all_files:
+            score = fuzz.ratio(filename.lower(), os.path.basename(fp).lower())
+            if score > best_score:
+                best_score = score
+                best_path = fp
+
+        return best_path if best_score >= 75 else None
+
     def show_in_explorer(self, filename: str) -> bool:
         try:
             desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
@@ -1958,6 +2216,9 @@ class Jarvis:
         self._yt_auto_pick = None
         # Track apps opened in CURRENT command chain (for "close dono")
         self._chain_opened_apps = []
+        # Track last found file(s) for quick delete
+        self._last_found_files = []  # List of (path, filename) tuples
+        self._last_found_filename = None
 
     def _hinglish_print(self, english_msg, hinglish_msg):
         if self.last_was_hinglish and hinglish_msg:
@@ -2562,7 +2823,14 @@ class Jarvis:
                 raw_content = re.sub(r'\s+in\s+(it|this\s+file|the\s+file)\s*$', '', raw_content, flags=re.IGNORECASE).strip()
                 raw_content = re.sub(r'\s+to\s+it\s*$', '', raw_content, flags=re.IGNORECASE).strip()
                 
-                # PDF route - check BEFORE code_keywords
+                # PPTX route - check BEFORE PDF
+                if filename.lower().endswith('.pptx'):
+                    print(f"[Jarvis] PPT mode: {filename}")
+                    self.file_manager.create_pptx(filename, raw_content)
+                    self.memory.log_activity('file_created', {'filename': filename, 'has_content': True, 'type': 'pptx'})
+                    return
+                
+                # PDF route - check after PPTX
                 if filename.lower().endswith('.pdf'):
                     print(f"[Jarvis] PDF mode: {filename}")
                     self.file_manager.create_pdf(filename, raw_content)
@@ -2630,6 +2898,14 @@ class Jarvis:
                     print("[Jarvis] File ka naam specify karo. Example: create file notes.txt")
                     return
                 
+                # PPTX route - check before PDF
+                if filename.lower().endswith('.pptx'):
+                    topic = filename.rsplit('.', 1)[0] if '.' in filename else filename
+                    print(f"[Jarvis] PPT mode: {filename}")
+                    self.file_manager.create_pptx(filename, f"complete presentation on {topic}")
+                    self.memory.log_activity('file_created', {'filename': filename, 'has_content': True, 'type': 'pptx'})
+                    return
+                
                 # PDF route - check for .pdf extension
                 if filename.lower().endswith('.pdf'):
                     topic = filename.rsplit('.', 1)[0] if '.' in filename else filename
@@ -2666,13 +2942,256 @@ class Jarvis:
             print(f"[Jarvis] 📂 File location: {desktop_path}")
             print(f"[Jarvis] 💡 Open manually with: notepad \"{filename}\" or double-click in Explorer")
         
-        elif cmd == "delete_file":
-            if not arg:
-                print("[Jarvis] Konsi file delete karni hai?")
+        elif cmd in ("delete", "delete_file", "delete_all"):
+            # Check for delete all
+            is_delete_all = (cmd == "delete_all" or 
+                            (arg and ('all' in arg.lower() or 'sab' in arg.lower())))
+            
+            # Get list of files to delete
+            files_to_delete = []
+            
+            if is_delete_all:
+                # Delete all found files (in reverse order like apps close)
+                files_to_delete = self._last_found_files.copy()
+                if not files_to_delete:
+                    print("[Jarvis] Pehle koi files find karo.")
+                    return
+                print(f"[Jarvis] {len(files_to_delete)} files found for deletion:")
+                for fp, fn in files_to_delete:
+                    print(f"  - {fn}")
+                print(f"[Jarvis] Delete karna chahte ho? (haan/nahi)")
+                confirm = input(">>> ").strip().lower()
+                if confirm not in ('haan', 'ha', 'yes', 'y', 'haa'):
+                    print("[Jarvis] Cancel. Files safe hain.")
+                    return
+                
+                # Delete in reverse order (like closing apps)
+                deleted_count = 0
+                for found, basename in reversed(files_to_delete):
+                    found = os.path.normpath(found)
+                    success = self._delete_file(found)
+                    if success:
+                        deleted_count += 1
+                        print(f"[Jarvis] ✅ Deleted: {basename}")
+                    else:
+                        print(f"[Jarvis] ❌ Failed: {basename}")
+                
+                print(f"[Jarvis] 📊 Total deleted: {deleted_count}/{len(files_to_delete)}")
+                self._last_found_files.clear()
+                self._last_found_filename = None
                 return
-            filename = re.sub(r'^file\s+', '', arg, 
-                             flags=re.IGNORECASE).strip()
-            self.file_manager.show_in_explorer(filename)
+            
+            # Single file delete (original behavior)
+            use_last_found = False
+            target_file = None
+            
+            if not arg or arg.strip() in ('it', 'this', 'that', 'last'):
+                # User said just "delete" or "delete it/this/last" - use last found file
+                if self._last_found_files:
+                    target_file = self._last_found_files[-1][0]  # Get last one
+                    use_last_found = True
+                    print(f"[Jarvis] Using last found file: {self._last_found_files[-1][1]}")
+                else:
+                    print("[Jarvis] Pehle 'find <filename>' command se file dhundho.")
+                    return
+            else:
+                # User specified a filename
+                filename = re.sub(r'^file\s+', '', arg, flags=re.IGNORECASE).strip()
+                print(f"[Jarvis] Searching: {filename}...")
+                target_file = self.file_manager.search_file_everywhere(filename)
+                if not target_file:
+                    # Check if it matches any of the found files
+                    matched = False
+                    for fp, fn in self._last_found_files:
+                        if fn.lower() == filename.lower():
+                            target_file = fp
+                            matched = True
+                            print(f"[Jarvis] Using found file: {fn}")
+                            break
+                    if not matched:
+                        print(f"[Jarvis] ❌ File nahi mili: {filename}")
+                        return
+            
+            # Normalize path
+            found = os.path.normpath(target_file)
+            
+            print(f"[Jarvis] ✅ File mili: {os.path.basename(found)}")
+            print(f"[Jarvis] 📂 Location: {found}")
+            subprocess.Popen(f'explorer /select,"{found}"')
+            time.sleep(0.8)
+            print(f"[Jarvis] Delete karna chahte ho? (haan/nahi)")
+            confirm = input(">>> ").strip().lower()
+            if confirm not in ('haan', 'ha', 'yes', 'y', 'haa'):
+                print("[Jarvis] Cancel. File safe hai.")
+                return
+            
+            # Delete single file
+            success = self._delete_file(found)
+            if success:
+                # Remove from found files list
+                self._last_found_files = [(fp, fn) for fp, fn in self._last_found_files 
+                                         if os.path.normpath(fp) != found]
+                if not self._last_found_files:
+                    self._last_found_filename = None
+            try:
+                import ctypes
+                from ctypes import wintypes
+                
+                # Clear any file attributes (read-only, hidden, etc.)
+                FILE_ATTRIBUTE_NORMAL = 0x80
+                kernel32 = ctypes.windll.kernel32
+                kernel32.SetFileAttributesW(found, FILE_ATTRIBUTE_NORMAL)
+                
+                FO_DELETE = 0x0003
+                FOF_ALLOWUNDO = 0x0040
+                FOF_NOCONFIRMATION = 0x0010
+                FOF_SILENT = 0x0004
+                
+                class SHFILEOPSTRUCT(ctypes.Structure):
+                    _fields_ = [
+                        ("hwnd", wintypes.HWND),
+                        ("wFunc", wintypes.UINT),
+                        ("pFrom", wintypes.LPCWSTR),
+                        ("pTo", wintypes.LPCWSTR),
+                        ("fFlags", wintypes.UINT),
+                        ("fAnyOperationsAborted", wintypes.BOOL),
+                        ("hNameMappings", wintypes.LPVOID),
+                        ("lpszProgressTitle", wintypes.LPCWSTR)
+                    ]
+                
+                shell32 = ctypes.windll.shell32
+                file_op = SHFILEOPSTRUCT()
+                file_op.wFunc = FO_DELETE
+                file_op.pFrom = found + '\0'
+                file_op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT
+                
+                result = shell32.SHFileOperationW(ctypes.byref(file_op))
+                
+                if result == 0:
+                    print(f"[Jarvis] ✅ Deleted: {os.path.basename(found)}")
+                    deleted = True
+            except Exception as e:
+                pass
+            
+            # Method 2: PowerShell Remove-Item (bypasses some locks)
+            if not deleted:
+                try:
+                    result = subprocess.run(
+                        ['powershell', '-Command', f'Remove-Item -Path "{found}" -Force -ErrorAction Stop'],
+                        capture_output=True,
+                        timeout=10
+                    )
+                    if result.returncode == 0:
+                        print(f"[Jarvis] ✅ Deleted: {os.path.basename(found)}")
+                        deleted = True
+                except:
+                    pass
+            
+            # Method 3: os.remove with attribute clearing
+            if not deleted:
+                try:
+                    # Clear attributes again
+                    import ctypes
+                    FILE_ATTRIBUTE_NORMAL = 0x80
+                    ctypes.windll.kernel32.SetFileAttributesW(found, FILE_ATTRIBUTE_NORMAL)
+                    os.remove(found)
+                    print(f"[Jarvis] ✅ Deleted: {os.path.basename(found)}")
+                    deleted = True
+                except PermissionError:
+                    print(f"[Jarvis] ❌ Access denied: File lock hai. OneDrive sync pause karo ya manually delete karo.")
+                except Exception as e:
+                    print(f"[Jarvis] ❌ Delete fail: {e}")
+            
+            if deleted:
+                self.memory.log_activity('file_deleted', {'filename': os.path.basename(found)})
+    
+    def _delete_file(self, found: str) -> bool:
+        """Helper method to delete a file using multiple methods. Returns True if successful."""
+        found = os.path.normpath(found)
+        
+        # Method 1: Clear attributes and use Shell API
+        try:
+            import ctypes
+            from ctypes import wintypes
+            
+            FILE_ATTRIBUTE_NORMAL = 0x80
+            kernel32 = ctypes.windll.kernel32
+            kernel32.SetFileAttributesW(found, FILE_ATTRIBUTE_NORMAL)
+            
+            FO_DELETE = 0x0003
+            FOF_ALLOWUNDO = 0x0040
+            FOF_NOCONFIRMATION = 0x0010
+            FOF_SILENT = 0x0004
+            
+            class SHFILEOPSTRUCT(ctypes.Structure):
+                _fields_ = [
+                    ("hwnd", wintypes.HWND),
+                    ("wFunc", wintypes.UINT),
+                    ("pFrom", wintypes.LPCWSTR),
+                    ("pTo", wintypes.LPCWSTR),
+                    ("fFlags", wintypes.UINT),
+                    ("fAnyOperationsAborted", wintypes.BOOL),
+                    ("hNameMappings", wintypes.LPVOID),
+                    ("lpszProgressTitle", wintypes.LPCWSTR)
+                ]
+            
+            shell32 = ctypes.windll.shell32
+            file_op = SHFILEOPSTRUCT()
+            file_op.wFunc = FO_DELETE
+            file_op.pFrom = found + '\0'
+            file_op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT
+            
+            result = shell32.SHFileOperationW(ctypes.byref(file_op))
+            
+            if result == 0:
+                return True
+        except:
+            pass
+        
+        # Method 2: PowerShell Remove-Item
+        try:
+            result = subprocess.run(
+                ['powershell', '-Command', f'Remove-Item -Path "{found}" -Force -ErrorAction Stop'],
+                capture_output=True,
+                timeout=10
+            )
+            if result.returncode == 0:
+                return True
+        except:
+            pass
+        
+        # Method 3: os.remove
+        try:
+            import ctypes
+            FILE_ATTRIBUTE_NORMAL = 0x80
+            ctypes.windll.kernel32.SetFileAttributesW(found, FILE_ATTRIBUTE_NORMAL)
+            os.remove(found)
+            return True
+        except:
+            return False
+        
+        return False
+        
+        elif cmd in ("find", "search file"):
+            if not arg:
+                print("[Jarvis] Kya dhundna hai?")
+                return
+            filename = arg.strip()
+            print(f"[Jarvis] Searching: {filename}...")
+            found = self.file_manager.search_file_everywhere(filename)
+            if found:
+                # Normalize path to use backslashes for Windows
+                found = os.path.normpath(found)
+                # Store for quick delete (as list for chain support)
+                self._last_found_files.append((found, os.path.basename(found)))
+                self._last_found_filename = os.path.basename(found)
+                print(f"[Jarvis] ✅ File mili: {os.path.basename(found)}")
+                print(f"[Jarvis] 📂 Location: {found}")
+                print(f"[Jarvis] 💡 Ab 'delete' bol ke is file ko delete kar sakte hain.")
+                print(f"[Jarvis] 💡 Ya 'delete all' bol ke sab files delete karo.")
+                subprocess.Popen(f'explorer /select,"{found}"')
+            else:
+                print(f"[Jarvis] ❌ File nahi mili: {filename}")
 
         elif cmd == "rename":
             if not arg:
@@ -3408,15 +3927,16 @@ class Jarvis:
                     continue
                 
                 # Add direct parse for delete file pattern - skip brain entirely
-                delete_match = re.match(
-                    r'^delete\s+(?:file\s+)?(\S+\.\w+)$', 
-                    user_input.strip(), re.IGNORECASE)
-                if delete_match:
-                    filename = delete_match.group(1)
-                    self.file_manager.show_in_explorer(filename)
-                    self.memory.add_command(user_input)
-                    self._processing_input = False
-                    continue
+                # Remove special delete handler - use handle_command instead
+                # delete_match = re.match(
+                #     r'^delete\s+(?:file\s+)?(\S+\.\w+)$', 
+                #     user_input.strip(), re.IGNORECASE)
+                # if delete_match:
+                #     filename = delete_match.group(1)
+                #     self.file_manager.show_in_explorer(filename)
+                #     self.memory.add_command(user_input)
+                #     self._processing_input = False
+                #     continue
                 
                 flattened = split_into_parts(user_input)
 
@@ -3452,6 +3972,12 @@ class Jarvis:
                     # This prevents hinglish_to_english from corrupting
                     # search_youtube/play_song commands
                     if is_fast_command(part):
+                        # Skip brain for create file with .pptx or .pdf
+                        part_lower = part.lower()
+                        if ('create file' in part_lower or 'create a file' in part_lower):
+                            if '.pptx' in part_lower or '.pdf' in part_lower:
+                                processed_parts.append("__brain_processed__" + part)
+                                continue
                         processed_parts.append(part)
                         continue
                     
@@ -3466,7 +3992,8 @@ class Jarvis:
                         'volume up', 'volume down', 'close',
                     ]
                     ACTION_VERBS = ['open ', 'close ', 'minimize ', 'maximize ',
-                                    'restore ', 'focus ']
+                                    'restore ', 'focus ', 'find ', 'delete ',
+                                    'rename ', 'update ', 'read ']
                     if translated != part and (
                         translated.lower() in fast_volume_commands or
                         translated.lower().startswith('set volume') or
