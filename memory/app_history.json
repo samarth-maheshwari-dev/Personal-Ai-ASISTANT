@@ -1,15 +1,19 @@
 [
   {
-    "app": "calculator",
-    "timestamp": "2026-04-01 17:18:47"
-  },
-  {
-    "app": "chrome",
-    "timestamp": "2026-04-01 17:18:39"
+    "app": "whatsapp",
+    "timestamp": "2026-04-02 13:42:26"
   },
   {
     "app": "notepad",
-    "timestamp": "2026-04-01 17:17:58"
+    "timestamp": "2026-04-02 13:31:27"
+  },
+  {
+    "app": "chrome",
+    "timestamp": "2026-04-02 13:31:19"
+  },
+  {
+    "app": "calculator",
+    "timestamp": "2026-04-01 17:18:47"
   },
   {
     "app": "dono",

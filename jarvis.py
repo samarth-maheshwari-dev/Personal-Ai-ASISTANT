@@ -211,6 +211,30 @@ def hinglish_to_english(text):
         t
     )
 
+    # Rename patterns
+    t = re.sub(
+        r'(\S+\.\w+)\s+ka\s+naam\s+(?:badlo|badal|change\s+karo)\s+(\S+\.\w+)',
+        r'rename \1 to \2',
+        t
+    )
+
+    # Update patterns
+    t = re.sub(
+        r'(\S+\.\w+)\s+mein\s+(?:likho|likhna|likh)\s+(.+)',
+        r'update \1 write \2',
+        t
+    )
+    t = re.sub(
+        r'(\S+\.\w+)\s+mein\s+(?:add\s+karo|add\s+kar|jodo)\s+(.+)',
+        r'update \1 add \2',
+        t
+    )
+    t = re.sub(
+        r'(\S+\.\w+)\s+(?:replace\s+karo|badal\s+do|overwrite\s+karo)\s+(.+)',
+        r'update \1 replace \2',
+        t
+    )
+
     for phrase, english in multi_word_volume.items():
         if phrase in t:
             return english
@@ -421,6 +445,7 @@ FAST_VERBS = [
     "restore ", "focus ", "set volume",
     "play on ", "pause on ", "next on ", "previous on ",
     "search_youtube ", "play_song ",
+    "rename ", "update ",
 ]
 
 SINGLE_WORD_COMMANDS = ['play', 'pause', 'next', 'previous', 
@@ -432,6 +457,9 @@ def is_fast_command(text):
     if t.startswith('memory'):
         return True
     if t.startswith('create file') or t.startswith('create a file'):
+        return True
+    # Also catch "write" commands for file creation
+    if 'create file' in t or 'create a file' in t:
         return True
     if t.startswith('delete file') or (t.startswith('delete ') and '.' in t):
         return True
@@ -453,11 +481,42 @@ def split_into_parts(user_input):
     parts = re.split(r'\s+then\s+|\s+phir\s+', user_input)
     flattened = []
     for segment in parts:
-        subparts = [p.strip() for p in re.split(r'\s+and\s+|\s+aur\s+|\s+or\s+', segment)]
-        for p in subparts:
-            if p:
-                flattened.append(p)
-    return flattened
+        # BUG 1 FIX: Don't split "create file X and write Y" on "and"
+        # If segment starts with create, keep it whole
+        seg_lower = segment.lower().strip()
+        if seg_lower.startswith('create file') or seg_lower.startswith('create a file'):
+            # Keep as one segment, don't split on and/aur/or
+            if segment.strip():
+                flattened.append(segment.strip())
+        else:
+            subparts = [p.strip() for p in re.split(r'\s+and\s+|\s+aur\s+|\s+or\s+', segment)]
+            for p in subparts:
+                if p:
+                    flattened.append(p)
+    
+    # FIX: If first part is "create file", absorb any following "write X in it" parts
+    result = []
+    skip_next = False
+    for i, part in enumerate(flattened):
+        if skip_next:
+            skip_next = False
+            continue
+        part_lower = part.lower().strip()
+        # If this is a create file command, check if next part is "write X in it"
+        if part_lower.startswith('create file') or part_lower.startswith('create a file'):
+            # Check if next part starts with "write" or similar
+            if i + 1 < len(flattened):
+                next_part = flattened[i + 1].lower().strip()
+                write_keywords = ['write ', 'type ', 'likho', 'likhna', 'mein likho']
+                if any(next_part.startswith(w) for w in write_keywords):
+                    # Combine: "create file X" + "write Y in it" -> "create file X and write Y in it"
+                    combined = part + " and " + flattened[i + 1]
+                    result.append(combined)
+                    skip_next = True
+                    continue
+        result.append(part)
+    
+    return result
 
 
 class DependencyManager:
@@ -468,13 +527,7 @@ class DependencyManager:
 
 class FileManager:
     
-    DEFAULT_DIR = os.path.join(
-        os.path.expanduser("~"), 
-        "OneDrive", "Desktop"
-    )
-    # Fallback if OneDrive Desktop doesn't exist
-    if not os.path.exists(DEFAULT_DIR):
-        DEFAULT_DIR = os.path.join(os.path.expanduser("~"), "Desktop")
+    DEFAULT_DIR = os.path.join(os.path.expanduser("~"), "OneDrive", "Desktop")
     
     def create_file(self, filename: str, content: str = "") -> bool:
         try:
@@ -505,6 +558,149 @@ class FileManager:
             
         except Exception as e:
             print(f"[Jarvis] File banana fail hua: {e}")
+            return False
+
+    def create_pdf(self, filename: str, topic: str) -> bool:
+        """AI generates styled HTML → Chrome headless converts to PDF"""
+        import re as _re, requests as _req
+        from dotenv import load_dotenv as _ldenv
+        _ldenv()
+
+        CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "")
+        filepath = os.path.join(self.DEFAULT_DIR, filename)
+        temp_html = filepath.replace('.pdf', '__jarvis_temp__.html')
+
+        HTML_SYSTEM = (
+            "You output ONLY a complete HTML document. No markdown. No explanation. "
+            "Start with <!DOCTYPE html>, end with </html>. "
+            "Use inline CSS in <style> tag. Include headings (h1/h2/h3), paragraphs, "
+            "code blocks (pre+code), tables, lists as needed. "
+            "CSS: body{font-family:Arial,sans-serif;margin:50px;line-height:1.8;color:#1a1a1a}"
+            "h1{color:#0d1b2a;border-bottom:3px solid #0d1b2a;padding-bottom:10px}"
+            "h2{color:#1b4332;margin-top:35px}"
+            "h3{color:#2d6a4f}"
+            "pre{background:#1a1a2e;color:#e0e0e0;padding:18px;border-radius:8px;"
+            "overflow-x:auto;font-family:'Courier New',monospace}"
+            "code{background:#f0f0f0;padding:2px 6px;border-radius:4px;"
+            "font-family:'Courier New',monospace;color:#c0392b}"
+            "table{width:100%;border-collapse:collapse;margin:20px 0}"
+            "th,td{border:1px solid #ccc;padding:12px;text-align:left}"
+            "th{background:#f5f5f5;font-weight:bold}"
+            "ul,ol{margin:10px 0;padding-left:25px}"
+            "li{margin:6px 0}"
+        )
+
+        print(f"[Jarvis] PDF ke liye HTML generate kar raha hoon...")
+        html_content = None
+        try:
+            resp = _req.post(
+                "https://api.cerebras.ai/v1/chat/completions",
+                json={
+                    "model": "llama3.1-8b",
+                    "messages": [
+                        {"role": "system", "content": HTML_SYSTEM},
+                        {"role": "user",   "content": f"Generate a complete, detailed HTML document: {topic}"}
+                    ],
+                    "temperature": 0.3,
+                    "max_tokens": 3000
+                },
+                headers={
+                    "Authorization": f"Bearer {CEREBRAS_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                timeout=30
+            )
+            if resp.status_code == 200:
+                html_content = resp.json()["choices"][0]["message"]["content"].strip()
+                html_content = _re.sub(r'^```\w*\n?', '', html_content)
+                html_content = _re.sub(r'\n?```$', '', html_content).strip()
+        except Exception as e:
+            print(f"[Jarvis] Cerebras failed: {e}")
+
+        if not html_content or not html_content.strip().startswith('<'):
+            html_content = (
+                f"<!DOCTYPE html><html><head><style>"
+                f"body{{font-family:Arial;margin:50px;line-height:1.8}}"
+                f"</style></head><body><h1>{topic}</h1>"
+                f"<p>Content generation failed. Please try again.</p></body></html>"
+            )
+
+        with open(temp_html, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+
+        chrome_exe = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+        if not os.path.exists(chrome_exe):
+            chrome_exe = r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+
+        print(f"[Jarvis] Using Chrome: {chrome_exe}")
+        
+        file_url = "file:///" + temp_html.replace("\\", "/")
+
+        success = False
+        for headless_flag in ["--headless=new", "--headless"]:
+            try:
+                chrome_cmd = [
+                    chrome_exe,
+                    headless_flag,
+                    "--disable-gpu",
+                    "--no-sandbox",
+                    "--no-first-run",
+                    "--disable-default-apps",
+                    "--disable-sync",
+                    "--run-all-compositor-stages-before-draw",
+                    "--disable-extensions",
+                    "--no-margins",
+                    "--virtual-time-budget=10000",
+                    f"--print-to-pdf={filepath}",
+                    file_url
+                ]
+                print(f"[Jarvis] Running command: {' '.join(chrome_cmd[:5])} ... --print-to-pdf={filepath}")
+                
+                result = subprocess.run(
+                    chrome_cmd,
+                    timeout=90,
+                    capture_output=True
+                )
+                
+                # Wait for PDF file to be written (async on Windows)
+                wait_count = 0
+                while wait_count < 20:
+                    if os.path.exists(filepath) and os.path.getsize(filepath) > 500:
+                        success = True
+                        print(f"[Jarvis] PDF file ready after {wait_count * 0.5}s wait")
+                        break
+                    time.sleep(0.5)
+                    wait_count += 1
+                
+                if success:
+                    break
+            except subprocess.TimeoutExpired:
+                print(f"[Jarvis] Chrome timeout with {headless_flag}")
+            except Exception as e:
+                print(f"[Jarvis] Chrome error ({headless_flag}): {e}")
+
+        try:
+            os.remove(temp_html)
+        except Exception:
+            pass
+
+        if success:
+            size_kb = os.path.getsize(filepath) // 1024
+            print(f"[Jarvis] ✅ PDF ready: {filepath} ({size_kb} KB)")
+            try:
+                os.startfile(filepath)
+            except Exception:
+                pass
+            return True
+        else:
+            fallback_path = filepath.replace('.pdf', '.html')
+            with open(fallback_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            print(f"[Jarvis] ⚠️  PDF nahi bana. HTML save ki: {fallback_path}")
+            try:
+                os.startfile(fallback_path)
+            except Exception:
+                pass
             return False
     
     def show_in_explorer(self, filename: str) -> bool:
@@ -1796,13 +1992,13 @@ class Jarvis:
         
         content_prompt = f"""Generate complete, detailed content for a file about: {topic}
         
-Format it properly with:
-- Clear headings and sections
-- Complete explanations  
-- Code examples if relevant
-- No placeholder text — real useful content only
+        Format it properly with:
+        - Clear headings and sections
+        - Complete explanations  
+        - Code examples if relevant
+        - No placeholder text — real useful content only
 
-Generate the full file content now:"""
+        Generate the full file content now:"""
         
         try:
             from brain import think
@@ -1816,7 +2012,8 @@ Generate the full file content now:"""
         except Exception as e:
             content = f"# {topic}\n\nContent about {topic}."
         
-        filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
+        desktop_path = os.path.join(os.path.expanduser("~"), "OneDrive", "Desktop")
+        filepath = os.path.join(desktop_path, filename)
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(content)
         
@@ -2345,7 +2542,7 @@ Generate the full file content now:"""
                 print("[Jarvis] Example: create file notes.txt")
                 return
             
-            arg_clean = re.sub(r'^file\s+', '', arg, flags=re.IGNORECASE).strip()
+            arg_clean = re.sub(r'^(a\s+)?file\s+', '', arg, flags=re.IGNORECASE).strip()
             
             content = ""
             filename = arg_clean
@@ -2361,14 +2558,30 @@ Generate the full file content now:"""
                 filename = write_match.group(1).strip()
                 raw_content = write_match.group(2).strip()
                 
+                # BUG 1 FIX: Strip trailing "in it", "in this file", "to it" etc.
+                raw_content = re.sub(r'\s+in\s+(it|this\s+file|the\s+file)\s*$', '', raw_content, flags=re.IGNORECASE).strip()
+                raw_content = re.sub(r'\s+to\s+it\s*$', '', raw_content, flags=re.IGNORECASE).strip()
+                
+                # PDF route - check BEFORE code_keywords
+                if filename.lower().endswith('.pdf'):
+                    print(f"[Jarvis] PDF mode: {filename}")
+                    self.file_manager.create_pdf(filename, raw_content)
+                    self.memory.log_activity('file_created', {'filename': filename, 'has_content': True, 'type': 'pdf'})
+                    return
+                
+                # BUG 2 FIX: Check file extension for brain trigger
+                ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+                brain_extensions = {'html', 'htm', 'sql', 'css', 'js', 'md', 'jsx', 'ts'}
+                
                 # Decide: needs brain or direct text?
                 code_keywords = [
                     'code', 'program', 'script', 'function', 'class',
-                    'write a', 'make a', 'generate', 'create a',
                     'c++', 'python', 'java', 'html', 'css', 'javascript',
                     'sql', 'cpp', 'algorithm', 'sort', 'search',
+                    'bubble', 'sorting', 'searching', 'binary', 'linear',
+                    'create a', 'make a', 'generate', 'implement',
                 ]
-                needs_brain = any(kw in raw_content.lower() for kw in code_keywords)
+                needs_brain = ext in brain_extensions or any(kw in raw_content.lower() for kw in code_keywords)
                 
                 if needs_brain:
                     # Generate via Cerebras API directly
@@ -2388,7 +2601,7 @@ Generate the full file content now:"""
                             "messages": [
                                 {
                                     "role": "system",
-                                    "content": "Generate ONLY the requested content. No explanation. No markdown backticks. Just raw clean content ready to save in a file."
+                                    "content": "You are a code generator. Output ONLY the raw code. No backticks, no markdown, no explanations, no introductions, no conclusions. Just clean, working code ready to save in a file."
                                 },
                                 {"role": "user", "content": raw_content}
                             ],
@@ -2408,16 +2621,32 @@ Generate the full file content now:"""
                         print(f"[Jarvis] Content generation error: {e}")
                         content = raw_content
                 else:
-                    # Direct text — write as-is
+                    # Direct text — write as-is (user provided exact content)
                     content = raw_content
             else:
+                # No "and write" - just create empty file or ask user
                 filename = arg_clean
-                topic = filename.rsplit('.', 1)[0] if '.' in filename else filename
-                print(f"[Jarvis] Generating content for {filename}...")
-                self._create_file_with_content(filename, topic)
+                if not filename:
+                    print("[Jarvis] File ka naam specify karo. Example: create file notes.txt")
+                    return
+                
+                # PDF route - check for .pdf extension
+                if filename.lower().endswith('.pdf'):
+                    topic = filename.rsplit('.', 1)[0] if '.' in filename else filename
+                    print(f"[Jarvis] PDF mode: {filename}")
+                    self.file_manager.create_pdf(filename, f"complete detailed notes on {topic}")
+                    self.memory.log_activity('file_created', {'filename': filename, 'has_content': True, 'type': 'pdf'})
+                    return
+                
+                if '.' not in filename:
+                    print(f"[Jarvis] Extension missing. Example: notes.txt, code.py")
+                    return
+                
+                # Create empty file
+                self.file_manager.create_file(filename, "")
                 self.memory.log_activity('file_created', {
                     'filename': filename,
-                    'has_content': True
+                    'has_content': False
                 })
                 return
             
@@ -2425,11 +2654,17 @@ Generate the full file content now:"""
                 print(f"[Jarvis] Extension missing. Example: notes.txt, code.py")
                 return
             
+            # Create the file
             self.file_manager.create_file(filename, content)
             self.memory.log_activity('file_created', {
                 'filename': filename,
                 'has_content': bool(content)
             })
+            
+            # Show file location - don't auto-open, user can open manually
+            desktop_path = os.path.join(os.path.expanduser("~"), "OneDrive", "Desktop")
+            print(f"[Jarvis] 📂 File location: {desktop_path}")
+            print(f"[Jarvis] 💡 Open manually with: notepad \"{filename}\" or double-click in Explorer")
         
         elif cmd == "delete_file":
             if not arg:
@@ -2438,6 +2673,168 @@ Generate the full file content now:"""
             filename = re.sub(r'^file\s+', '', arg, 
                              flags=re.IGNORECASE).strip()
             self.file_manager.show_in_explorer(filename)
+
+        elif cmd == "rename":
+            if not arg:
+                print("[Jarvis] Usage: rename <filename> to <new_name>")
+                print("[Jarvis] Example: rename notes.txt to backup.txt")
+                return
+            
+            # Strip "file " prefix
+            arg_clean = re.sub(r'^file\s+', '', arg, flags=re.IGNORECASE).strip()
+            
+            # Split on " to "
+            if ' to ' not in arg_clean:
+                print("[Jarvis] Use 'to' for new name. Example: rename notes.txt to backup.txt")
+                return
+            
+            parts = arg_clean.split(' to ', 1)
+            old_name = parts[0].strip()
+            new_name = parts[1].strip()
+            
+            if not old_name or not new_name:
+                print("[Jarvis] Old and new name both chahiye.")
+                return
+            
+            # Search for file
+            default_dir = self.file_manager.DEFAULT_DIR
+            search_paths = [
+                os.path.join(default_dir, old_name),
+                os.path.join(os.path.expanduser("~"), "Desktop", old_name),
+            ]
+            
+            old_path = None
+            for path in search_paths:
+                if os.path.exists(path):
+                    old_path = path
+                    break
+            
+            if not old_path:
+                print(f"[Jarvis] File nahi mili: {old_name}")
+                return
+            
+            # Get new path in same folder
+            folder = os.path.dirname(old_path)
+            new_path = os.path.join(folder, new_name)
+            
+            try:
+                os.rename(old_path, new_path)
+                print(f"[Jarvis] ✅ Renamed: {old_name} → {new_name}")
+                self.memory.log_activity('file_renamed', {
+                    'old_name': old_name,
+                    'new_name': new_name
+                })
+            except Exception as e:
+                print(f"[Jarvis] Rename fail: {e}")
+
+        elif cmd == "update":
+            if not arg:
+                print("[Jarvis] Usage: update <filename> write/replace/add <content>")
+                print("[Jarvis] Example: update notes.txt write new content here")
+                return
+            
+            # Parse: filename mode content
+            match = re.match(r'^(\S+\.\w+)\s+(write|replace|add|append)\s+(.+)$', arg, re.IGNORECASE)
+            if not match:
+                print("[Jarvis] Format: update <filename> write/replace/add <content>")
+                return
+            
+            filename = match.group(1).strip()
+            mode_word = match.group(2).lower().strip()
+            content_instruction = match.group(3).strip()
+            
+            # Determine file mode
+            if mode_word in ('write', 'replace'):
+                file_mode = 'w'
+            else:  # add or append
+                file_mode = 'a'
+            
+            # Search for file
+            default_dir = self.file_manager.DEFAULT_DIR
+            search_paths = [
+                os.path.join(default_dir, filename),
+                os.path.join(os.path.expanduser("~"), "Desktop", filename),
+            ]
+            
+            filepath = None
+            for path in search_paths:
+                if os.path.exists(path):
+                    filepath = path
+                    break
+            
+            if not filepath:
+                print(f"[Jarvis] File nahi mili: {filename}")
+                print(f"[Jarvis] Pehle banao: create file {filename}")
+                return
+            
+            # Generate content
+            ALWAYS_GENERATE_EXTENSIONS = [
+                '.py', '.js', '.ts', '.html', '.css', '.sql',
+                '.cpp', '.c', '.java', '.php', '.rb', '.go',
+                '.rs', '.md', '.xml', '.json'
+            ]
+            
+            ext = os.path.splitext(filename)[1].lower()
+            generate_keywords = [
+                'code', 'function', 'script', 'class', 'generate',
+                'write a', 'make a', 'create', 'algorithm', 'query',
+                'program', 'implement', 'css', 'html', 'sql'
+            ]
+            
+            needs_brain = ext in ALWAYS_GENERATE_EXTENSIONS or any(
+                kw in content_instruction.lower() for kw in generate_keywords
+            )
+            
+            content = content_instruction
+            if needs_brain:
+                print(f"[Jarvis] Generating content...")
+                try:
+                    import requests
+                    from dotenv import load_dotenv
+                    load_dotenv()
+                    CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "")
+                    url = "https://api.cerebras.ai/v1/chat/completions"
+                    headers = {
+                        "Authorization": f"Bearer {CEREBRAS_API_KEY}",
+                        "Content-Type": "application/json"
+                    }
+                    body = {
+                        "model": "llama3.1-8b",
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": "Generate ONLY the requested content. No explanation. No markdown backticks. Just raw clean content ready to save in a file."
+                            },
+                            {"role": "user", "content": content_instruction}
+                        ],
+                        "temperature": 0.3,
+                        "max_tokens": 2000
+                    }
+                    r = requests.post(url, json=body, headers=headers, timeout=30)
+                    if r.status_code == 200:
+                        content = r.json()["choices"][0]["message"]["content"].strip()
+                        content = re.sub(r'^```\w*\n?', '', content)
+                        content = re.sub(r'\n?```$', '', content).strip()
+                except Exception as e:
+                    print(f"[Jarvis] Content generation error: {e}")
+                    content = content_instruction
+            
+            # Prepend newline for append mode
+            if file_mode == 'a':
+                content = "\n" + content
+            
+            # Write to file
+            try:
+                with open(filepath, file_mode, encoding='utf-8') as f:
+                    f.write(content)
+                
+                line_count = content.count('\n') + 1
+                char_count = len(content)
+                mode_label = "overwrite" if file_mode == 'w' else "append"
+                print(f"[Jarvis] ✅ Updated: {filename} ({mode_label} mode)")
+                print(f"[Jarvis] 📝 {line_count} lines, {char_count} characters.")
+            except Exception as e:
+                print(f"[Jarvis] Write fail: {e}")
 
         else:
             print(f"Unknown command: {cmd}")

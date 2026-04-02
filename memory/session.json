@@ -1,52 +1,52 @@
 [
   {
-    "date": "2026-04-01",
-    "time": "17:22:10",
-    "command": "open youtube.com"
+    "date": "2026-04-02",
+    "time": "13:49:37",
+    "command": "create file notes.txt write something random in it"
   },
   {
-    "date": "2026-04-01",
-    "time": "17:22:13",
-    "command": "open github.com"
+    "date": "2026-04-02",
+    "time": "13:49:38",
+    "command": "create a file my notes.txt and write today's tasks"
   },
   {
-    "date": "2026-04-01",
-    "time": "17:22:18",
-    "command": "close dono"
+    "date": "2026-04-02",
+    "time": "13:50:11",
+    "command": "rename notes.txt to backup_notes.txt"
   },
   {
-    "date": "2026-04-01",
-    "time": "17:22:59",
-    "command": "search_youtube python tutorial"
+    "date": "2026-04-02",
+    "time": "13:50:11",
+    "command": "rename file sort.py to bubble_sort.py"
   },
   {
-    "date": "2026-04-01",
-    "time": "17:23:55",
-    "command": "search_youtube html one shot from begginer to advance"
+    "date": "2026-04-02",
+    "time": "13:50:11",
+    "command": "update notes.txt write this is completely new content"
   },
   {
-    "date": "2026-04-01",
-    "time": "17:24:05",
-    "command": "next on chrome"
+    "date": "2026-04-02",
+    "time": "13:50:12",
+    "command": "update notes.txt add this line should be appended"
   },
   {
-    "date": "2026-04-01",
-    "time": "17:24:15",
-    "command": "next"
+    "date": "2026-04-02",
+    "time": "13:50:14",
+    "command": "update style.css write dark theme for full page not just navbar"
   },
   {
-    "date": "2026-04-01",
-    "time": "17:29:31",
-    "command": "gitignore file bhi h"
+    "date": "2026-04-02",
+    "time": "13:50:17",
+    "command": "update query.sql replace with query to find monthly revenue by region"
   },
   {
-    "date": "2026-04-01",
-    "time": "17:32:51",
-    "command": "disagreeing at the same time"
+    "date": "2026-04-02",
+    "time": "13:50:17",
+    "command": "update filedoesnotexist.txt write something"
   },
   {
-    "date": "2026-04-01",
-    "time": "17:33:07",
+    "date": "2026-04-02",
+    "time": "13:51:55",
     "command": "exit"
   }
 ]

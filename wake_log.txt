@@ -1,0 +1,3 @@
+[2026-04-02 13:28:59] [Wake] Voice detected: 'wake up jarvis'
+[2026-04-02 13:29:00] [Wake] Launched JARVIS via Windows Terminal.
+[2026-04-02 13:45:06] [Wake] Launched JARVIS via Windows Terminal.

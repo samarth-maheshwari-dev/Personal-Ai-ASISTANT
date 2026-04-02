@@ -158,5 +158,484 @@
     "data": {
       "query": "html one shot from begginer to advance"
     }
+  },
+  {
+    "date": "2026-04-01",
+    "time": "17:47:57",
+    "type": "file_created",
+    "data": {
+      "filename": "a file test.txt",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "06:43:18",
+    "type": "file_created",
+    "data": {
+      "filename": "a file sort.py",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "06:55:17",
+    "type": "file_created",
+    "data": {
+      "filename": "test.txt",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "06:58:02",
+    "type": "file_created",
+    "data": {
+      "filename": "test.txt",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "07:08:11",
+    "type": "file_created",
+    "data": {
+      "filename": "test.txt",
+      "has_content": false
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "07:09:24",
+    "type": "file_created",
+    "data": {
+      "filename": "sort.py",
+      "has_content": false
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "07:17:42",
+    "type": "file_created",
+    "data": {
+      "filename": "test.txt",
+      "has_content": false
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "07:18:55",
+    "type": "file_created",
+    "data": {
+      "filename": "hello world.py",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "07:20:57",
+    "type": "file_created",
+    "data": {
+      "filename": "htmlresources.pdf",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "07:25:13",
+    "type": "file_created",
+    "data": {
+      "filename": "html_resources.pdf",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "07:58:52",
+    "type": "file_created",
+    "data": {
+      "filename": "test.txt",
+      "has_content": false
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "07:59:47",
+    "type": "file_created",
+    "data": {
+      "filename": "helloworld.txt",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:02:10",
+    "type": "file_created",
+    "data": {
+      "filename": "htmlresources.pdf",
+      "has_content": true,
+      "type": "pdf"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:15:20",
+    "type": "file_created",
+    "data": {
+      "filename": "notes.txt",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:15:21",
+    "type": "file_created",
+    "data": {
+      "filename": "data.csv",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:15:26",
+    "type": "file_created",
+    "data": {
+      "filename": "style.css",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:17:54",
+    "type": "file_created",
+    "data": {
+      "filename": "sort.py",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:17:54",
+    "type": "file_created",
+    "data": {
+      "filename": "index.html",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:17:59",
+    "type": "file_created",
+    "data": {
+      "filename": "query.sql",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:19:53",
+    "type": "file_created",
+    "data": {
+      "filename": "python_notes.pdf",
+      "has_content": true,
+      "type": "pdf"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:20:51",
+    "type": "file_created",
+    "data": {
+      "filename": "dsa.pdf",
+      "has_content": true,
+      "type": "pdf"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:21:08",
+    "type": "file_created",
+    "data": {
+      "filename": ".txt",
+      "has_content": false
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:21:09",
+    "type": "file_created",
+    "data": {
+      "filename": "notes.txt",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:21:12",
+    "type": "file_created",
+    "data": {
+      "filename": "my notes.txt",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:35:27",
+    "type": "file_created",
+    "data": {
+      "filename": "notes.txt",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:35:27",
+    "type": "file_created",
+    "data": {
+      "filename": "data.csv",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:35:28",
+    "type": "file_created",
+    "data": {
+      "filename": "style.css",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:36:06",
+    "type": "file_created",
+    "data": {
+      "filename": "sort.py",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:36:08",
+    "type": "file_created",
+    "data": {
+      "filename": "index.html",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:36:10",
+    "type": "file_created",
+    "data": {
+      "filename": "query.sql",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:36:50",
+    "type": "file_created",
+    "data": {
+      "filename": "python_notes.pdf",
+      "has_content": true,
+      "type": "pdf"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:36:54",
+    "type": "file_created",
+    "data": {
+      "filename": "dsa.pdf",
+      "has_content": true,
+      "type": "pdf"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:37:12",
+    "type": "file_created",
+    "data": {
+      "filename": ".txt",
+      "has_content": false
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:37:13",
+    "type": "file_created",
+    "data": {
+      "filename": "notes.txt",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "08:37:13",
+    "type": "file_created",
+    "data": {
+      "filename": "my notes.txt",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:30:37",
+    "type": "app_opened",
+    "data": {
+      "app": "notepad"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:31:19",
+    "type": "app_opened",
+    "data": {
+      "app": "chrome"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:31:27",
+    "type": "app_opened",
+    "data": {
+      "app": "notepad"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:41:49",
+    "type": "app_opened",
+    "data": {
+      "app": "whatsapp"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:42:26",
+    "type": "app_opened",
+    "data": {
+      "app": "whatsapp"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:47:50",
+    "type": "file_created",
+    "data": {
+      "filename": "notes.txt",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:47:51",
+    "type": "file_created",
+    "data": {
+      "filename": "data.csv",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:47:53",
+    "type": "file_created",
+    "data": {
+      "filename": "style.css",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:48:24",
+    "type": "file_created",
+    "data": {
+      "filename": "sort.py",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:48:26",
+    "type": "file_created",
+    "data": {
+      "filename": "index.html",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:48:28",
+    "type": "file_created",
+    "data": {
+      "filename": "query.sql",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:49:09",
+    "type": "file_created",
+    "data": {
+      "filename": "python_notes.pdf",
+      "has_content": true,
+      "type": "pdf"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:49:13",
+    "type": "file_created",
+    "data": {
+      "filename": "dsa.pdf",
+      "has_content": true,
+      "type": "pdf"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:49:37",
+    "type": "file_created",
+    "data": {
+      "filename": ".txt",
+      "has_content": false
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:49:37",
+    "type": "file_created",
+    "data": {
+      "filename": "notes.txt",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:49:38",
+    "type": "file_created",
+    "data": {
+      "filename": "my notes.txt",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:50:11",
+    "type": "file_renamed",
+    "data": {
+      "old_name": "notes.txt",
+      "new_name": "backup_notes.txt"
+    }
+  },
+  {
+    "date": "2026-04-02",
+    "time": "13:50:11",
+    "type": "file_renamed",
+    "data": {
+      "old_name": "sort.py",
+      "new_name": "bubble_sort.py"
+    }
   }
 ]

@@ -386,7 +386,7 @@ def call_mistral(self, messages, system_prompt):
         "Content-Type": "application/json"
     }
     body = {
-        "model": "mistral-small-3.1-24b-instruct",
+        "model": "mistral-small-3.2-24b-instruct",
         "messages": [{"role": "system", "content": system_prompt}] + messages,
         "temperature": 0.7,
         "max_tokens": 1000
@@ -1269,7 +1269,7 @@ def call_mistral(user_input: str, history: list = None) -> dict:
     messages.append({"role": "user", "content": user_input})
     
     body = {
-        "model": "mistral-small-3.1-24b-instruct",
+        "model": "mistral-small-3.2-24b-instruct",
         "messages": messages,
         "temperature": 0.7,
         "max_tokens": 2000
@@ -1893,7 +1893,7 @@ INSTRUCTIONS:
             "Content-Type": "application/json"
         }
         body = {
-            "model": "mistral-small-3.1-24b-instruct",
+            "model": "mistral-small-3.2-24b-instruct",
             "messages": [{"role": "system", "content": system_prompt}] + messages,
             "temperature": 0.7,
             "max_tokens": 1000
