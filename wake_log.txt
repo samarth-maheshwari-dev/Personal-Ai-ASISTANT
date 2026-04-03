@@ -12,3 +12,19 @@
 [2026-04-02 15:23:47] [Wake] Launched JARVIS via Windows Terminal.
 [2026-04-02 15:28:13] [Wake] Launched JARVIS via Windows Terminal.
 [2026-04-02 15:41:10] [Wake] Launched JARVIS via Windows Terminal.
+
+--- JARVIS Wake System Started at 2026-04-03 06:37:01.131552 ---
+[2026-04-03 06:37:01] [Hotkey] Listening for ctrl+alt+j...
+[2026-04-03 06:37:01] [Wake] Voice listener started.
+
+--- JARVIS Wake System Started at 2026-04-03 06:55:31.543375 ---
+[2026-04-03 06:55:31] [Hotkey] Listening for ctrl+alt+j...
+[2026-04-03 06:55:31] [Wake] Voice listener started.
+
+--- JARVIS Wake System Started at 2026-04-03 09:30:25.031562 ---
+[2026-04-03 09:30:25] [Hotkey] Listening for ctrl+alt+j...
+[2026-04-03 09:30:25] [Wake] Voice listener started.
+
+--- JARVIS Wake System Started at 2026-04-03 13:58:33.769867 ---
+[2026-04-03 13:58:33] [Hotkey] Listening for ctrl+alt+j...
+[2026-04-03 13:58:33] [Wake] Voice listener started.
