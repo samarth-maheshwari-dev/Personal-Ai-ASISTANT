@@ -708,5 +708,154 @@
     "data": {
       "filename": "sexy.txt"
     }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:49:30",
+    "type": "app_opened",
+    "data": {
+      "app": "notepad"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:49:42",
+    "type": "app_opened",
+    "data": {
+      "app": "calculator"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:49:53",
+    "type": "app_opened",
+    "data": {
+      "app": "settings"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:50:01",
+    "type": "app_opened",
+    "data": {
+      "app": "notepad"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:50:13",
+    "type": "app_opened",
+    "data": {
+      "app": "calculator"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:50:21",
+    "type": "app_opened",
+    "data": {
+      "app": "notepad"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:50:32",
+    "type": "app_opened",
+    "data": {
+      "app": "settings"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:50:50",
+    "type": "app_opened",
+    "data": {
+      "app": "chrome"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:50:58",
+    "type": "app_opened",
+    "data": {
+      "app": "calculator"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:51:12",
+    "type": "app_opened",
+    "data": {
+      "app": "settings"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:51:21",
+    "type": "app_opened",
+    "data": {
+      "app": "notepad"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:52:45",
+    "type": "youtube_search",
+    "data": {
+      "query": "python tutorial"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:53:20",
+    "type": "youtube_search",
+    "data": {
+      "query": "data structures"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:54:23",
+    "type": "file_created",
+    "data": {
+      "filename": "hello.cpp",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:55:06",
+    "type": "file_created",
+    "data": {
+      "filename": "world.cpp",
+      "has_content": true
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:55:33",
+    "type": "file_created",
+    "data": {
+      "filename": "slides.pptx",
+      "has_content": true,
+      "type": "pptx"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:57:18",
+    "type": "file_renamed",
+    "data": {
+      "old_name": "filenotexist.txt",
+      "new_name": "other.txt"
+    }
+  },
+  {
+    "date": "2026-07-26",
+    "time": "17:59:32",
+    "type": "app_opened",
+    "data": {
+      "app": "sab"
+    }
   }
 ]

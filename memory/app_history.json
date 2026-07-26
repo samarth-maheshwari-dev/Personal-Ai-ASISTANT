@@ -1,22 +1,22 @@
 [
   {
-    "app": "whatsapp",
-    "timestamp": "2026-04-02 13:42:26"
-  },
-  {
-    "app": "notepad",
-    "timestamp": "2026-04-02 13:31:27"
+    "app": "sab",
+    "timestamp": "2026-07-26 17:59:32"
   },
   {
     "app": "chrome",
-    "timestamp": "2026-04-02 13:31:19"
+    "timestamp": "2026-07-26 17:51:46"
+  },
+  {
+    "app": "notepad",
+    "timestamp": "2026-07-26 17:51:31"
   },
   {
     "app": "calculator",
-    "timestamp": "2026-04-01 17:18:47"
+    "timestamp": "2026-07-26 17:51:29"
   },
   {
-    "app": "dono",
-    "timestamp": "2026-04-01 10:08:47"
+    "app": "settings",
+    "timestamp": "2026-07-26 17:51:13"
   }
 ]

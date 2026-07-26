@@ -1,52 +1,52 @@
 [
   {
-    "date": "2026-04-02",
-    "time": "15:29:34",
-    "command": "find byby.txt"
+    "date": "2026-07-26",
+    "time": "17:52:30",
+    "command": "close youtube.com"
   },
   {
-    "date": "2026-04-02",
-    "time": "15:30:50",
-    "command": "find byby.txt"
+    "date": "2026-07-26",
+    "time": "17:52:35",
+    "command": "close github.com"
   },
   {
-    "date": "2026-04-02",
-    "time": "15:31:11",
-    "command": "delete byby.txt"
+    "date": "2026-07-26",
+    "time": "17:53:07",
+    "command": "search_youtube python tutorial"
   },
   {
-    "date": "2026-04-02",
-    "time": "15:42:13",
-    "command": "find taxi.txt"
+    "date": "2026-07-26",
+    "time": "17:53:39",
+    "command": "search_youtube data structures"
   },
   {
-    "date": "2026-04-02",
-    "time": "15:42:14",
-    "command": "mexi.txt"
+    "date": "2026-07-26",
+    "time": "17:54:23",
+    "command": "create file hello.cpp and write hello world program in c++"
   },
   {
-    "date": "2026-04-02",
-    "time": "15:42:35",
-    "command": "find sexy.txt"
+    "date": "2026-07-26",
+    "time": "17:55:06",
+    "command": "create file world.cpp and write a cpp code of hello world in it"
   },
   {
-    "date": "2026-04-02",
-    "time": "15:42:46",
-    "command": "find mexi.txt"
+    "date": "2026-07-26",
+    "time": "17:55:33",
+    "command": "create file slides.pptx and write Python tutorial presentation"
   },
   {
-    "date": "2026-04-02",
-    "time": "15:43:08",
-    "command": "delete taxi.txt"
+    "date": "2026-07-26",
+    "time": "17:55:52",
+    "command": "find hello.Cpp"
   },
   {
-    "date": "2026-04-02",
-    "time": "15:43:21",
-    "command": "delete mexi.txt"
+    "date": "2026-07-26",
+    "time": "17:57:18",
+    "command": "rename filenotexist.txt to other.txt"
   },
   {
-    "date": "2026-04-02",
-    "time": "15:43:39",
-    "command": "delete sexy.txt"
+    "date": "2026-07-26",
+    "time": "17:59:32",
+    "command": "open sab"
   }
 ]

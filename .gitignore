@@ -1,9 +1,40 @@
+# Environment & API Keys
 .env
+
+# Python
 __pycache__/
 *.pyc
 .venv/
+*.egg-info/
+dist/
+build/
+
+# Binaries
 nircmd.exe
+
+# Local test/fix scripts (not for public repo)
+fix_bugs.py
+fix_engineering_loop.py
+test_file_creation.py
 test_groq.py
 test_openrouter.py
 test_sambanova.py
-memory.json
+_fix_*.py
+_*.py
+
+# Runtime logs
+wake_log.txt
+*.log
+
+# User session data (memory JSON files)
+memory/*.json
+
+# Frontend dependencies
+frontend jarvis/node_modules/
+frontend jarvis/package-lock.json
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

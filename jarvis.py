@@ -31,7 +31,7 @@ def install_packages(packages):
             subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
 
 
-install_packages(["pyautogui", "pygetwindow", "pywin32", "rapidfuzz", "psutil", "winrt-runtime", "winrt-Windows.Media.Control", "winrt-Windows.Foundation", "winrt-Windows.Foundation.Collections", "python-dotenv", "requests", "yt-dlp", "ddgs", "pycaw", "comtypes", "python-pptx", "send2trash"])
+install_packages(["pyautogui", "pygetwindow", "pywin32", "rapidfuzz", "psutil", "winrt-runtime", "winrt-Windows.Media.Control", "winrt-Windows.Foundation", "winrt-Windows.Foundation.Collections", "requests", "yt-dlp", "ddgs", "pycaw", "comtypes", "python-pptx", "send2trash"])
 
 
 import pyautogui
@@ -65,6 +65,7 @@ def web_search(query: str, max_results: int = 5) -> str:
 
 
 from brain import think
+from ai.ollama_router import handle as generate_content
 
 
 def run_async(coro):
@@ -608,14 +609,9 @@ class FileManager:
         """AI generates slide content → python-pptx builds presentation"""
         try:
             import json
-            import requests
-            from dotenv import load_dotenv
             from pptx import Presentation
             from pptx.util import Inches, Pt
             from pptx.dml.color import RGBColor
-            
-            load_dotenv()
-            CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "")
             
             print(f"[Jarvis] Generating PPT slides about: {topic}...")
             
@@ -628,32 +624,17 @@ class FileManager:
             )
             
             try:
-                resp = requests.post(
-                    "https://api.cerebras.ai/v1/chat/completions",
-                    json={
-                        "model": "llama3.1-8b",
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": f"Create presentation slides about: {topic}"}
-                        ],
-                        "temperature": 0.3,
-                        "max_tokens": 2000
-                    },
-                    headers={
-                        "Authorization": f"Bearer {CEREBRAS_API_KEY}",
-                        "Content-Type": "application/json"
-                    },
-                    timeout=30
-                )
-                
-                if resp.status_code == 200:
-                    slides_text = resp.json()["choices"][0]["message"]["content"].strip()
+                prompt = f"{system_prompt}\n\nCreate presentation slides about: {topic}"
+                result = generate_content(prompt)
+                slides_text = result.get('reply', '').strip()
+                if slides_text:
                     # Strip markdown fences
                     slides_text = re.sub(r'^```\w*\n?', '', slides_text)
                     slides_text = re.sub(r'\n?```$', '', slides_text).strip()
-                    slides = json.loads(slides_text)
+                    import json as _json
+                    slides = _json.loads(slides_text)
                 else:
-                    raise Exception(f"API status {resp.status_code}")
+                    raise Exception("Empty response from Ollama")
                     
             except Exception as e:
                 print(f"[Jarvis] Slide generation failed: {e}")
@@ -756,11 +737,8 @@ class FileManager:
 
     def create_pdf(self, filename: str, topic: str) -> bool:
         """AI generates styled HTML → Chrome headless converts to PDF"""
-        import re as _re, requests as _req
-        from dotenv import load_dotenv as _ldenv
-        _ldenv()
+        import re as _re
 
-        CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "")
         filepath = os.path.join(self.DEFAULT_DIR, filename)
         temp_html = filepath.replace('.pdf', '__jarvis_temp__.html')
 
@@ -787,29 +765,14 @@ class FileManager:
         print(f"[Jarvis] PDF ke liye HTML generate kar raha hoon...")
         html_content = None
         try:
-            resp = _req.post(
-                "https://api.cerebras.ai/v1/chat/completions",
-                json={
-                    "model": "llama3.1-8b",
-                    "messages": [
-                        {"role": "system", "content": HTML_SYSTEM},
-                        {"role": "user",   "content": f"Generate a complete, detailed HTML document: {topic}"}
-                    ],
-                    "temperature": 0.3,
-                    "max_tokens": 3000
-                },
-                headers={
-                    "Authorization": f"Bearer {CEREBRAS_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                timeout=30
-            )
-            if resp.status_code == 200:
-                html_content = resp.json()["choices"][0]["message"]["content"].strip()
+            prompt = f"{HTML_SYSTEM}\n\nGenerate a complete, detailed HTML document: {topic}"
+            result = generate_content(prompt)
+            html_content = result.get('reply', '').strip()
+            if html_content:
                 html_content = _re.sub(r'^```\w*\n?', '', html_content)
                 html_content = _re.sub(r'\n?```$', '', html_content).strip()
         except Exception as e:
-            print(f"[Jarvis] Cerebras failed: {e}")
+            print(f"[Jarvis] Ollama failed: {e}")
 
         if not html_content or not html_content.strip().startswith('<'):
             html_content = (
@@ -1747,38 +1710,6 @@ def find_session(app_hint):
         pass
 
     return None
-
-
-    def _youtube_keyboard_next(self):
-        """Press Shift+N on YouTube tab — skips to next video."""
-        import pyautogui
-        import time
-        
-        if not self._focus_chrome_tab('youtube'):
-            return
-        
-        pyautogui.hotkey('shift', 'n')
-        time.sleep(0.2)
-
-    def _youtube_keyboard_previous(self):
-        """Press Shift+P on YouTube tab — goes to previous video."""
-        import pyautogui
-        import time
-        
-        if not self._focus_chrome_tab('youtube'):
-            return
-        
-        pyautogui.hotkey('shift', 'p')
-        time.sleep(0.2)
-
-    if not was_maximized:
-        try:
-            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-            left, top, right, bottom = orig_rect
-            win32gui.MoveWindow(hwnd, left, top,
-                                right - left, bottom - top, True)
-        except Exception:
-            pass
 
 
 async def media_action_async(action, app_hint=None, jarvis_instance=None):
@@ -2852,34 +2783,14 @@ class Jarvis:
                 needs_brain = ext in brain_extensions or any(kw in raw_content.lower() for kw in code_keywords)
                 
                 if needs_brain:
-                    # Generate via Cerebras API directly
+                    # Generate via Ollama
                     print(f"[Jarvis] Generating content...")
                     try:
-                        import requests
-                        from dotenv import load_dotenv
-                        load_dotenv()
-                        CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "")
-                        url = "https://api.cerebras.ai/v1/chat/completions"
-                        headers = {
-                            "Authorization": f"Bearer {CEREBRAS_API_KEY}",
-                            "Content-Type": "application/json"
-                        }
-                        body = {
-                            "model": "llama3.1-8b",
-                            "messages": [
-                                {
-                                    "role": "system",
-                                    "content": "You are a code generator. Output ONLY the raw code. No backticks, no markdown, no explanations, no introductions, no conclusions. Just clean, working code ready to save in a file."
-                                },
-                                {"role": "user", "content": raw_content}
-                            ],
-                            "temperature": 0.3,
-                            "max_tokens": 2000
-                        }
-                        r = requests.post(url, json=body, headers=headers, timeout=30)
-                        if r.status_code == 200:
-                            content = r.json()["choices"][0]["message"]["content"].strip()
-                            # Strip markdown code fences
+                        system_prompt = "You are a code generator. Output ONLY the raw code. No backticks, no markdown, no explanations, no introductions, no conclusions. Just clean, working code ready to save in a file."
+                        prompt = f"{system_prompt}\n\n{raw_content}"
+                        result = generate_content(prompt)
+                        content = result.get('reply', '').strip()
+                        if content:
                             content = re.sub(r'^```\w*\n?', '', content)
                             content = re.sub(r'\n?```$', '', content)
                             content = content.strip()
@@ -3104,74 +3015,7 @@ class Jarvis:
             
             if deleted:
                 self.memory.log_activity('file_deleted', {'filename': os.path.basename(found)})
-    
-    def _delete_file(self, found: str) -> bool:
-        """Helper method to delete a file using multiple methods. Returns True if successful."""
-        found = os.path.normpath(found)
-        
-        # Method 1: Clear attributes and use Shell API
-        try:
-            import ctypes
-            from ctypes import wintypes
-            
-            FILE_ATTRIBUTE_NORMAL = 0x80
-            kernel32 = ctypes.windll.kernel32
-            kernel32.SetFileAttributesW(found, FILE_ATTRIBUTE_NORMAL)
-            
-            FO_DELETE = 0x0003
-            FOF_ALLOWUNDO = 0x0040
-            FOF_NOCONFIRMATION = 0x0010
-            FOF_SILENT = 0x0004
-            
-            class SHFILEOPSTRUCT(ctypes.Structure):
-                _fields_ = [
-                    ("hwnd", wintypes.HWND),
-                    ("wFunc", wintypes.UINT),
-                    ("pFrom", wintypes.LPCWSTR),
-                    ("pTo", wintypes.LPCWSTR),
-                    ("fFlags", wintypes.UINT),
-                    ("fAnyOperationsAborted", wintypes.BOOL),
-                    ("hNameMappings", wintypes.LPVOID),
-                    ("lpszProgressTitle", wintypes.LPCWSTR)
-                ]
-            
-            shell32 = ctypes.windll.shell32
-            file_op = SHFILEOPSTRUCT()
-            file_op.wFunc = FO_DELETE
-            file_op.pFrom = found + '\0'
-            file_op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT
-            
-            result = shell32.SHFileOperationW(ctypes.byref(file_op))
-            
-            if result == 0:
-                return True
-        except:
-            pass
-        
-        # Method 2: PowerShell Remove-Item
-        try:
-            result = subprocess.run(
-                ['powershell', '-Command', f'Remove-Item -Path "{found}" -Force -ErrorAction Stop'],
-                capture_output=True,
-                timeout=10
-            )
-            if result.returncode == 0:
-                return True
-        except:
-            pass
-        
-        # Method 3: os.remove
-        try:
-            import ctypes
-            FILE_ATTRIBUTE_NORMAL = 0x80
-            ctypes.windll.kernel32.SetFileAttributesW(found, FILE_ATTRIBUTE_NORMAL)
-            os.remove(found)
-            return True
-        except:
-            return False
-        
-        return False
-        
+
         elif cmd in ("find", "search file"):
             if not arg:
                 print("[Jarvis] Kya dhundna hai?")
@@ -3307,31 +3151,14 @@ class Jarvis:
             content = content_instruction
             if needs_brain:
                 print(f"[Jarvis] Generating content...")
+            if needs_brain:
+                print(f"[Jarvis] Generating content...")
                 try:
-                    import requests
-                    from dotenv import load_dotenv
-                    load_dotenv()
-                    CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "")
-                    url = "https://api.cerebras.ai/v1/chat/completions"
-                    headers = {
-                        "Authorization": f"Bearer {CEREBRAS_API_KEY}",
-                        "Content-Type": "application/json"
-                    }
-                    body = {
-                        "model": "llama3.1-8b",
-                        "messages": [
-                            {
-                                "role": "system",
-                                "content": "Generate ONLY the requested content. No explanation. No markdown backticks. Just raw clean content ready to save in a file."
-                            },
-                            {"role": "user", "content": content_instruction}
-                        ],
-                        "temperature": 0.3,
-                        "max_tokens": 2000
-                    }
-                    r = requests.post(url, json=body, headers=headers, timeout=30)
-                    if r.status_code == 200:
-                        content = r.json()["choices"][0]["message"]["content"].strip()
+                    system_prompt = "Generate ONLY the requested content. No explanation. No markdown backticks. Just raw clean content ready to save in a file."
+                    prompt = f"{system_prompt}\n\n{content_instruction}"
+                    result = generate_content(prompt)
+                    content = result.get('reply', '').strip()
+                    if content:
                         content = re.sub(r'^```\w*\n?', '', content)
                         content = re.sub(r'\n?```$', '', content).strip()
                 except Exception as e:
