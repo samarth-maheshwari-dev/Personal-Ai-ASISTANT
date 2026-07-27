@@ -6,7 +6,7 @@
 
 JARVIS is a **Windows 11 terminal-based AI assistant** built from scratch in Python 3.13 — with zero budget, zero paid APIs, and zero shortcuts.
 
-It is not a chatbot wrapper. It is not a voice assistant skin. It is a full system that **thinks, decides, and acts** — controlling your PC like a human would, powered by multiple free AI providers working as one brain.
+It is not a chatbot wrapper. It is not a voice assistant skin. It is a full system that **thinks, decides, and acts** — controlling your PC like a human would, powered by a 5-model priority chain running entirely through Ollama — two cloud proxies for speed when online, three local models for full offline operation when not.
 
 The goal was simple but ambitious: build something that feels less like a tool and more like an actual assistant that understands what you want.
 
@@ -46,24 +46,51 @@ The goal was simple but ambitious: build something that feels less like a tool a
 - `next on spotify`, `pause on spotify`, `previous on spotify`
 - No desktop app needed — runs fully in Chrome tab
 
-**AI Brain — Multi-Provider 🧩**
-- Cerebras → fast responses, file generation
-- SambaNova → code, math, complex logic
-- Mistral → education, explanations
-- NVIDIA Nemotron → heavy reasoning
-- OpenRouter → fallback conversation
-- Ollama → fully offline fallback
-- Auto-routes your query to the best model for that type
+**AI Brain — 5-Model Priority Chain 🧩**
+
+> JARVIS runs a single unified priority chain through Ollama. No juggling multiple API dashboards. No separate keys for each provider. One interface — five fallbacks — defined in `ai/ollama_router.py`.
+
+**Priority Chain (tried in order, pehle se last tak)**
+
+| Priority | Model | Type | Timeout | Role |
+|---|---|---|---|---|
+| 1 | `minimax-m3:cloud` | ☁️ Cloud Proxy | 30s | Fastest — primary response |
+| 2 | `nemotron-3-super:cloud` | ☁️ Cloud Proxy | 30s | Second cloud, strong reasoning |
+| 3 | `gemma4:e2b` | 💻 Offline Local | 120s | Best offline model, heavy tasks |
+| 4 | `qwen2.5:3b` | 💻 Offline Local | 60s | Lightweight, fast offline |
+| 5 | `phi3:mini` | 💻 Offline Local | 60s | Last resort, minimum RAM usage |
+
+Cloud proxies (1–2) route through Ollama's cloud model interface. If you're offline or they timeout — JARVIS drops to local models (3–5) automatically. No config change, no manual switching.
+
+**How the Brain Routes Queries**
+
+```
+User Input → ai/ollama_router.py
+    ↓
+1. minimax-m3:cloud        [30s timeout]
+   ↓ fail / timeout
+2. nemotron-3-super:cloud  [30s timeout]
+   ↓ fail / timeout
+3. gemma4:e2b              [120s timeout]  ← offline fallback starts here
+   ↓ fail
+4. qwen2.5:3b              [60s timeout]
+   ↓ fail
+5. phi3:mini               [60s timeout]
+   ↓ all 5 fail
+   → retry loop + recovery attempt
+```
+
+Every model in the chain is managed through Ollama. **No external API keys required** — everything goes through a single Ollama interface.
 
 **Web Search (Real-Time) 🌐**
 - Detects queries needing live data (weather, news, prices, scores)
 - Multi-attempt search with result filtering
-- Summarized by Cerebras — clean 2-3 line answer, no hallucination dump
+- Summarized by the active cloud model — clean 2-3 line answer, no hallucination dump
 
 **File Creation 📄**
 - `create file notes.txt` → AI generates full content
 - `create file sort.py and write bubble sort code` → writes working code
-- Direct Cerebras API call — raw clean output, no markdown noise
+- Direct API call — raw clean output, no markdown noise
 - Saves to Desktop by default
 
 **Memory System 💾**
@@ -86,6 +113,7 @@ The goal was simple but ambitious: build something that feels less like a tool a
 - Python 3.13+
 - Google Chrome installed
 - nircmd.exe (place in JARVIS folder — for volume control)
+- Ollama installed — **required** (manages all AI models, cloud + local)
 
 **Step 1 — Clone the repo**
 ```bash
@@ -98,37 +126,50 @@ cd Personal-Ai-ASISTANT
 pip install pyautogui pygetwindow pywin32 rapidfuzz psutil winrt-runtime winrt-Windows.Media.Control python-dotenv requests yt-dlp ddgs pycaw comtypes
 ```
 
-**Step 3 — Create your `.env` file**
+**Step 3 — Install Ollama and pull all models**
 
-Create a file named `.env` in the JARVIS folder and add your free API keys:
+Install Ollama from [ollama.ai](https://ollama.ai), then pull the full model chain:
 
-```env
-CEREBRAS_API_KEY=your_key_here
-SAMBANOVA_API_KEY=your_key_here
-OPENROUTER_API_KEY=your_key_here
-NVIDIA_API_KEY=your_key_here
-MISTRAL_API_KEY=your_key_here
+```bash
+# Cloud proxy models (requires internet for first pull)
+ollama pull minimax-m3:cloud
+ollama pull nemotron-3-super:cloud
+
+# Offline local models (stored on your machine)
+ollama pull gemma4:e2b
+ollama pull qwen2.5:3b
+ollama pull phi3:mini
 ```
 
-All of these are **free tier** — no credit card needed:
-- Cerebras → cerebras.ai
-- SambaNova → sambanova.ai
-- OpenRouter → openrouter.ai
-- NVIDIA NIM → build.nvidia.com
-- Mistral → console.mistral.ai
+> Minimum setup: pull at least `qwen2.5:3b` and `phi3:mini` for offline support. Cloud models will auto-fallback to local if Ollama can't reach them.
+
+> No API keys needed. No `.env` required for the AI brain. Ollama manages everything.
 
 **Step 4 — Run**
 ```bash
 python jarvis.py
 ```
 
-**Optional — Offline Mode**
+JARVIS loads `ai/ollama_router.py` at startup and tries models in priority order automatically. No manual switching, no config changes needed.
 
-Install Ollama from ollama.ai and pull:
-```bash
-ollama pull qwen2.5:3b
-```
-JARVIS will use this as fallback when internet is unavailable.
+---
+
+### Why This Architecture Is Better 🔧
+
+The old JARVIS used 5+ different API providers simultaneously, each requiring its own key, separate SDK, rate limit tracking, and independent failure handling.
+
+The new version is cleaner:
+
+| Old Setup | New Setup |
+|---|---|
+| 5+ API keys across different dashboards | Zero API keys — all through Ollama |
+| Each provider = separate SDK | Single Ollama interface for everything |
+| Online-only | Cloud proxy + 3 offline local fallbacks |
+| Manual provider switching | Automatic priority chain via `ollama_router.py` |
+| All fail = broken | All fail = retry loop + recovery attempt |
+
+Same intelligence. Zero key management. Works without internet.
+
 
 ---
 
@@ -157,25 +198,30 @@ This is where things get serious. JARVIS is designed to grow — and the next ph
 ---
 
 **Phase 2 — Remote Control via Phone 📱**
-Control JARVIS from anywhere using your phone. Running a command from another city and watching your PC execute it. This will likely use a lightweight WebSocket server with a simple phone UI — no app install needed, just a browser.
+
+Control JARVIS from anywhere using your phone. Running a command from another city and watching your PC execute it. This will use a lightweight WebSocket server with a simple phone UI — no app install needed, just a browser.
 
 ---
 
 **Phase 3 — WhatsApp & Instagram Messaging 💬**
+
 JARVIS will be able to send messages on your behalf.
 `send whatsapp message to Mom: coming home at 8`
 `reply to instagram DM from john: okay sounds good`
-This requires browser automation with logged-in sessions — planned using Playwright.
+Planned using Playwright with logged-in browser sessions.
 
 ---
 
 **Phase 4 — PDF Reading + Voice (TTS) 📖🔊**
+
 Drop a PDF and ask JARVIS to read it, summarize it, or answer questions from it.
-Text-to-speech so JARVIS actually speaks the answer back — no more reading the terminal. Voice input is also on the roadmap so you can speak commands naturally.
+Text-to-speech so JARVIS actually speaks the answer back — no more reading the terminal.
+Voice input is also on the roadmap so you can speak commands naturally.
 
 ---
 
 **Phase 5 — Human-Like Task Execution 🧠**
+
 The end goal. JARVIS should handle multi-step real-world tasks the way a human assistant would:
 - `book a cab` → opens Ola/Uber, fills details, confirms
 - `check my last 5 emails and summarize` → reads Gmail, gives digest
@@ -189,7 +235,12 @@ Not clicking buttons blindly — actually understanding context, recovering from
 
 Most AI assistants either need expensive subscriptions, don't work offline, only do one thing, or feel robotic and generic.
 
-JARVIS is built different — entirely from free tools, runs on your own machine, understands the way Indians actually talk (Hinglish), and is designed to feel less like a product and more like your own assistant that you shaped yourself.
+JARVIS is built different:
+- Entirely from **free tools**
+- Runs **on your own machine**
+- Works **offline** with local Ollama models
+- Understands the way **Indians actually talk** (Hinglish)
+- Designed to feel less like a product and more like **your own assistant** that you shaped yourself
 
 Every feature in here was built, broken, debugged, and rebuilt through real testing. There are no shortcuts in this codebase.
 
@@ -206,4 +257,4 @@ The goal is to keep building until `open my laptop, do my work, and tell me when
 ---
 
 *Built by Samarth Maheshwari — Indore, India 🇮🇳*
-*Python 3.13 | Windows 11 | Zero Budget | Built from scratch*# Personal-Ai-ASISTANT
+*Python 3.13 | Windows 11 | Zero Budget | Built from scratch*
