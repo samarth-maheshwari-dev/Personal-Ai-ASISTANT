@@ -15,7 +15,10 @@ nircmd.exe
 # Local test/fix scripts (not for public repo)
 fix_bugs.py
 fix_engineering_loop.py
-*test_*.py
+test_file_creation.py
+test_groq.py
+test_openrouter.py
+test_sambanova.py
 _fix_*.py
 _*.py
 

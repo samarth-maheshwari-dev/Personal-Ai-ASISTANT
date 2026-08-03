@@ -4,3 +4,13 @@ pywin32
 rapidfuzz
 psutil
 winrt-runtime
+winrt-Windows.Media.Control
+winrt-Windows.Foundation
+winrt-Windows.Foundation.Collections
+requests
+yt-dlp
+ddgs
+pycaw
+comtypes
+python-pptx
+send2trash

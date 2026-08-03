@@ -2213,6 +2213,83 @@ class Jarvis:
         print(f"[Jarvis] Content preview: {content[:100]}...")
         return filepath
 
+    def _delete_file(self, filepath: str) -> bool:
+        """Delete a file using multiple fallback methods:
+        1. Recycle Bin (SHFileOperationW) — undo-able delete
+        2. PowerShell Remove-Item
+        3. os.remove with attribute clearing
+        """
+        import ctypes
+        from ctypes import wintypes
+
+        found = os.path.normpath(filepath)
+
+        # Method 1: Recycle Bin (restorable delete)
+        try:
+            # Clear any file attributes (read-only, hidden, etc.)
+            FILE_ATTRIBUTE_NORMAL = 0x80
+            kernel32 = ctypes.windll.kernel32
+            kernel32.SetFileAttributesW(found, FILE_ATTRIBUTE_NORMAL)
+
+            FO_DELETE = 0x0003
+            FOF_ALLOWUNDO = 0x0040
+            FOF_NOCONFIRMATION = 0x0010
+            FOF_SILENT = 0x0004
+
+            class SHFILEOPSTRUCT(ctypes.Structure):
+                _fields_ = [
+                    ("hwnd", wintypes.HWND),
+                    ("wFunc", wintypes.UINT),
+                    ("pFrom", wintypes.LPCWSTR),
+                    ("pTo", wintypes.LPCWSTR),
+                    ("fFlags", wintypes.UINT),
+                    ("fAnyOperationsAborted", wintypes.BOOL),
+                    ("hNameMappings", wintypes.LPVOID),
+                    ("lpszProgressTitle", wintypes.LPCWSTR)
+                ]
+
+            shell32 = ctypes.windll.shell32
+            file_op = SHFILEOPSTRUCT()
+            file_op.wFunc = FO_DELETE
+            file_op.pFrom = found + '\0'
+            file_op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT
+
+            result = shell32.SHFileOperationW(ctypes.byref(file_op))
+
+            if result == 0:
+                print(f"[Jarvis] ✅ Deleted: {os.path.basename(found)}")
+                return True
+        except Exception:
+            pass
+
+        # Method 2: PowerShell Remove-Item (bypasses some locks)
+        try:
+            result = subprocess.run(
+                ['powershell', '-Command', f'Remove-Item -Path "{found}" -Force -ErrorAction Stop'],
+                capture_output=True,
+                timeout=10
+            )
+            if result.returncode == 0:
+                print(f"[Jarvis] ✅ Deleted: {os.path.basename(found)}")
+                return True
+        except Exception:
+            pass
+
+        # Method 3: os.remove with attribute clearing
+        try:
+            import ctypes
+            FILE_ATTRIBUTE_NORMAL = 0x80
+            ctypes.windll.kernel32.SetFileAttributesW(found, FILE_ATTRIBUTE_NORMAL)
+            os.remove(found)
+            print(f"[Jarvis] ✅ Deleted: {os.path.basename(found)}")
+            return True
+        except PermissionError:
+            print(f"[Jarvis] ❌ Access denied: File lock hai. OneDrive sync pause karo ya manually delete karo.")
+        except Exception as e:
+            print(f"[Jarvis] ❌ Delete fail: {e}")
+
+        return False
+
     def handle_command(self, cmd, arg):
         if cmd in ('close', 'band', 'bandh', 'hatao'):
             cmd = 'close'
@@ -2944,76 +3021,6 @@ class Jarvis:
                                          if os.path.normpath(fp) != found]
                 if not self._last_found_files:
                     self._last_found_filename = None
-            try:
-                import ctypes
-                from ctypes import wintypes
-                
-                # Clear any file attributes (read-only, hidden, etc.)
-                FILE_ATTRIBUTE_NORMAL = 0x80
-                kernel32 = ctypes.windll.kernel32
-                kernel32.SetFileAttributesW(found, FILE_ATTRIBUTE_NORMAL)
-                
-                FO_DELETE = 0x0003
-                FOF_ALLOWUNDO = 0x0040
-                FOF_NOCONFIRMATION = 0x0010
-                FOF_SILENT = 0x0004
-                
-                class SHFILEOPSTRUCT(ctypes.Structure):
-                    _fields_ = [
-                        ("hwnd", wintypes.HWND),
-                        ("wFunc", wintypes.UINT),
-                        ("pFrom", wintypes.LPCWSTR),
-                        ("pTo", wintypes.LPCWSTR),
-                        ("fFlags", wintypes.UINT),
-                        ("fAnyOperationsAborted", wintypes.BOOL),
-                        ("hNameMappings", wintypes.LPVOID),
-                        ("lpszProgressTitle", wintypes.LPCWSTR)
-                    ]
-                
-                shell32 = ctypes.windll.shell32
-                file_op = SHFILEOPSTRUCT()
-                file_op.wFunc = FO_DELETE
-                file_op.pFrom = found + '\0'
-                file_op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT
-                
-                result = shell32.SHFileOperationW(ctypes.byref(file_op))
-                
-                if result == 0:
-                    print(f"[Jarvis] ✅ Deleted: {os.path.basename(found)}")
-                    deleted = True
-            except Exception as e:
-                pass
-            
-            # Method 2: PowerShell Remove-Item (bypasses some locks)
-            if not deleted:
-                try:
-                    result = subprocess.run(
-                        ['powershell', '-Command', f'Remove-Item -Path "{found}" -Force -ErrorAction Stop'],
-                        capture_output=True,
-                        timeout=10
-                    )
-                    if result.returncode == 0:
-                        print(f"[Jarvis] ✅ Deleted: {os.path.basename(found)}")
-                        deleted = True
-                except:
-                    pass
-            
-            # Method 3: os.remove with attribute clearing
-            if not deleted:
-                try:
-                    # Clear attributes again
-                    import ctypes
-                    FILE_ATTRIBUTE_NORMAL = 0x80
-                    ctypes.windll.kernel32.SetFileAttributesW(found, FILE_ATTRIBUTE_NORMAL)
-                    os.remove(found)
-                    print(f"[Jarvis] ✅ Deleted: {os.path.basename(found)}")
-                    deleted = True
-                except PermissionError:
-                    print(f"[Jarvis] ❌ Access denied: File lock hai. OneDrive sync pause karo ya manually delete karo.")
-                except Exception as e:
-                    print(f"[Jarvis] ❌ Delete fail: {e}")
-            
-            if deleted:
                 self.memory.log_activity('file_deleted', {'filename': os.path.basename(found)})
 
         elif cmd in ("find", "search file"):
