@@ -14,3 +14,7 @@ pycaw
 comtypes
 python-pptx
 send2trash
+fastapi
+uvicorn
+websockets
+python-multipart

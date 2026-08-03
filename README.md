@@ -152,6 +152,38 @@ python jarvis.py
 
 JARVIS loads `ai/ollama_router.py` at startup and tries models in priority order automatically. No manual switching, no config changes needed.
 
+**Step 5 — Run the Web UI (optional) 🖥️**
+
+JARVIS now ships with a **Web Dashboard** — a sleek Iron-Man-style JARVIS interface with a command bar, live green terminal logs, and full control of your desktop assistant from the browser.
+
+```bash
+# Terminal 1 — Start the FastAPI backend server
+python server.py
+# → Backend at http://localhost:8000
+
+# Terminal 2 — Start the frontend dev server
+cd "frontend jarvis"
+npm install
+npm run dev
+# → UI at http://localhost:5173
+```
+
+Open `http://localhost:5173` in Chrome, type `open chrome`, `notepad kholo`, `volume up`, or ask anything — and watch the live logs stream in green at the bottom of the screen.
+
+**How the Web integration works 🔌**
+
+| Layer | Tech | Role |
+|---|---|---|
+| Frontend UI | Vite + React + Tailwind | Iron-Man JARVIS dashboard, command input, live log panel |
+| API | FastAPI (`server.py`) | Wraps the JARVIS engine → `POST /api/command` |
+| Live Logs | WebSocket (`/ws`) | Streams real-time stdout to the browser in green |
+| Brain | `ai/ollama_router.py` | 5-model priority chain for conversation & commands |
+
+- `POST /api/command` `{ "input": "open chrome" }` → structured JSON `{ message, type, action, target, model_used, success, timestamp }`
+- `GET /ws` → WebSocket that broadcasts every log line (`[Jarvis] ...`) live to connected clients
+- CORS is enabled so the Vite dev server (5173) can talk to the backend (8000)
+- Interactive prompts (e.g. YouTube video picker) auto-resolve to the first/default option so the API never blocks
+
 ---
 
 ### Why This Architecture Is Better 🔧

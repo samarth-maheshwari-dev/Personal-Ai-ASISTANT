@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  PlusCircle, 
-  Zap, 
-  Cpu, 
-  MessageSquare, 
-  Folder, 
-  Inbox, 
-  Database, 
-  Wrench, 
-  MoreHorizontal, 
-  Settings, 
-  Search, 
+import {
+  PlusCircle,
+  Zap,
+  Cpu,
+  MessageSquare,
+  Folder,
+  Inbox,
+  Database,
+  Wrench,
+  MoreHorizontal,
+  Settings,
+  Search,
   Filter,
   CheckCircle2,
   Workflow,
@@ -29,6 +29,8 @@ import ThreadItem from './ThreadItem';
 const Sidebar = () => {
   const [width, setWidth] = useState(230);
   const [isResizing, setIsResizing] = useState(false);
+  const [threads, setThreads] = useState([]);
+  const [activeId, setActiveId] = useState(null);
   const sidebarRef = useRef(null);
 
   useEffect(() => {
@@ -40,9 +42,26 @@ const Sidebar = () => {
       }
     };
 
-    const handleMouseUp = () => {
-      setIsResizing(false);
+    const loadThreads = () => {
+      const stored = JSON.parse(localStorage.getItem('jarvis-threads') || '[]');
+      setThreads(stored);
     };
+
+    loadThreads();
+
+    const handleMouseUp = () => setIsResizing(false);
+    const handleThreadsUpdated = () => loadThreads();
+    const handleSetThread = (e) => setActiveId(e.detail?.id || null);
+
+    // When a message is sent in empty state, CommandBar creates a thread
+    const handleThreadCreated = (e) => {
+      setActiveId(e.detail.id);
+      loadThreads();
+    };
+
+    window.addEventListener('threads-updated', handleThreadsUpdated);
+    window.addEventListener('set-thread', handleSetThread);
+    window.addEventListener('thread-created', handleThreadCreated);
 
     if (isResizing) {
       document.addEventListener('mousemove', handleMouseMove);
@@ -52,17 +71,51 @@ const Sidebar = () => {
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('threads-updated', handleThreadsUpdated);
+      window.removeEventListener('set-thread', handleSetThread);
+      window.removeEventListener('thread-created', handleThreadCreated);
     };
   }, [isResizing]);
 
+  const handleDelete = (id) => {
+    const next = threads.filter(t => t.id !== id);
+    localStorage.setItem('jarvis-threads', JSON.stringify(next));
+    setThreads(next);
+    if (activeId === id) {
+      window.dispatchEvent(new CustomEvent('set-thread', { detail: { id: null } }));
+    }
+  };
+
+  const handleRename = (id, currentTitle) => {
+    const newTitle = window.prompt("Rename chat:", currentTitle);
+    if (!newTitle || newTitle.trim() === '') return;
+    const next = threads.map(t => t.id === id ? { ...t, title: newTitle.trim() } : t);
+    localStorage.setItem('jarvis-threads', JSON.stringify(next));
+    setThreads(next);
+  };
+
+  const handlePin = (id) => {
+    const next = threads.map(t => t.id === id ? { ...t, isPinned: !t.isPinned } : t);
+    localStorage.setItem('jarvis-threads', JSON.stringify(next));
+    setThreads(next);
+  };
+
+  const handleSelect = (id) => {
+    window.dispatchEvent(new CustomEvent('set-thread', { detail: { id } }));
+  };
+
+  const handleNewThread = () => {
+    window.dispatchEvent(new CustomEvent('set-thread', { detail: { id: null } }));
+  };
+
   return (
-    <div 
+    <div
       ref={sidebarRef}
       style={{ width: `${width}px` }}
       className="relative h-full flex flex-col border-r border-jarvis-border bg-[#0a0d17]/40 backdrop-blur-3xl shrink-0 group/sidebar"
     >
       {/* Resizer Handle */}
-      <div 
+      <div
         className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize z-50 hover:bg-white/10 transition-colors"
         onMouseDown={(e) => {
           e.preventDefault();
@@ -86,14 +139,16 @@ const Sidebar = () => {
       <div className="flex-1 overflow-y-auto px-1 group-scrollbar custom-scrollbar pb-10">
         {/* Main Actions */}
         <div className="px-1 space-y-0.5 mb-6">
-          <NavItem icon={PlusCircle} label="New thread" isActive={false} />
+          <div onClick={handleNewThread}>
+            <NavItem icon={PlusCircle} label="New thread" isActive={!activeId} />
+          </div>
           <NavItem icon={Zap} label="Automations" />
           <NavItem icon={Cpu} label="Skills" />
         </div>
 
         {/* Threads Section */}
-        <SidebarSection 
-          title="Threads" 
+        <SidebarSection
+          title="Threads"
           actions={
             <div className="flex space-x-2">
               <Search size={12} className="text-jarvis-muted hover:text-jarvis-text cursor-pointer transition-colors" />
@@ -101,19 +156,25 @@ const Sidebar = () => {
             </div>
           }
         >
-          <div className="px-3 py-1 mb-1 first:mt-0 text-[10px] font-semibold text-jarvis-muted/40 tracking-wider">
-            Today
+          <div className="px-3 py-1 mb-1 text-[10px] font-semibold text-emerald-500/80 tracking-wider">
+            Threads
           </div>
-          <ThreadItem title="You have your ow..." time="31m" isActive={true} />
-          <ThreadItem title="Dutch Guy Needs..." time="37m" />
-          <ThreadItem title="What's Up with Yo..." time="10h" />
-          <ThreadItem title="Weather in São Pa..." time="13h" />
-          <ThreadItem title="Send Test Email to..." time="14h" />
-          <div className="px-3 py-1 mt-4 mb-1 text-[10px] font-semibold text-jarvis-muted/40 tracking-wider">
-            Yesterday
-          </div>
-          <ThreadItem title="Project Beta Recap" time="24h" />
-          <ThreadItem title="Deployment Pipeline" time="26h" />
+          {threads.length === 0 && (
+            <div className="px-3 py-2 text-[11px] text-white/30 italic">No previous chats</div>
+          )}
+          {threads.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0)).map(t => (
+            <ThreadItem
+              key={t.id}
+              title={t.title}
+              time={t.time || "recent"}
+              isActive={activeId === t.id}
+              isPinned={t.isPinned}
+              onClick={() => handleSelect(t.id)}
+              onDelete={() => handleDelete(t.id)}
+              onRename={() => handleRename(t.id, t.title)}
+              onPin={() => handlePin(t.id)}
+            />
+          ))}
         </SidebarSection>
 
       </div>

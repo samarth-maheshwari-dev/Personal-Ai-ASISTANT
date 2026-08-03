@@ -1,35 +1,34 @@
 import { motion } from 'framer-motion';
 import { AiLoader } from '../ui/ai-loader';
 
-const MainHero = () => {
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  };
-
+const MainHero = ({ chatStarted = false }) => {
   return (
     <div className="flex flex-col items-center text-center max-w-2xl px-6">
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+        animate={{
+          scale: chatStarted ? 0.65 : 1,
+          y: chatStarted ? 0 : 0
+        }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        className="origin-top"
       >
         <AiLoader size={200} text="Jarvis" />
       </motion.div>
-      
+
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="mt-6"
+        animate={{
+          opacity: chatStarted ? 0 : 1,
+          height: chatStarted ? 0 : 'auto',
+          marginTop: chatStarted ? 0 : 24
+        }}
+        transition={{ duration: 0.5 }}
+        className="overflow-hidden"
       >
         <h1 className="text-4xl font-bold tracking-tight text-white mb-2">
-          {getGreeting()}
+          Hey Samarth ✨
         </h1>
         <p className="text-[15px] text-white/40 font-medium tracking-wide">
-          I'm Jarvis. Ask me anything, or try one of these:
+          What are we building today?
         </p>
       </motion.div>
     </div>

@@ -1,25 +1,32 @@
 import React from 'react';
+import { Edit2, Trash2, Pin, PinOff } from 'lucide-react';
 
-const ThreadItem = ({ title, time, isActive = false }) => {
+const ThreadItem = ({ title, time, isActive = false, isPinned = false, onClick, onDelete, onRename, onPin }) => {
   return (
-    <div 
+    <div
+      onClick={onClick}
       className={`
-        mx-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all border-l-2
-        ${isActive 
-          ? 'bg-jarvis-active/40 border-jarvis-accent text-jarvis-text' 
-          : 'border-transparent text-jarvis-muted hover:bg-white/5 hover:text-jarvis-text'}
+        relative group mx-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all border-l-2
+        ${isActive
+          ? 'bg-white/10 border-white/20 text-white'
+          : 'border-transparent text-white/50 hover:bg-white/5 hover:text-white/90'}
       `}
     >
       <div className="flex justify-between items-center w-full">
-        <span className="text-[12.5px] font-medium truncate pr-2 tracking-tight">
+        <span className="text-[14px] font-medium truncate pr-6 tracking-tight">
           {title}
         </span>
-        <span className="text-[10px] text-jarvis-muted/50 font-normal shrink-0">
-          {time}
-        </span>
       </div>
-      <div className="text-[10.5px] opacity-40 truncate leading-tight mt-0.5">
-        Click to open this conversation
+
+      {/* Actions (visible on hover) */}
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-l from-[#0a0d17] via-[#0a0d17] to-transparent pl-6 py-1">
+        <Edit2 size={13} className="text-white/40 hover:text-white/90 cursor-pointer" onClick={(e) => { e.stopPropagation(); onRename && onRename(); }} />
+        <Trash2 size={13} className="text-white/40 hover:text-red-400 cursor-pointer" onClick={(e) => { e.stopPropagation(); onDelete && onDelete(); }} />
+        {isPinned ? (
+          <PinOff size={13} className="text-emerald-400 hover:text-emerald-500 cursor-pointer" onClick={(e) => { e.stopPropagation(); onPin && onPin(); }} />
+        ) : (
+          <Pin size={13} className="text-white/40 hover:text-emerald-400 cursor-pointer" onClick={(e) => { e.stopPropagation(); onPin && onPin(); }} />
+        )}
       </div>
     </div>
   );
