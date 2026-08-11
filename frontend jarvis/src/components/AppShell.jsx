@@ -40,7 +40,6 @@ const AppShell = () => {
             {/* Top/Center Area */}
             <div className={`w-full flex-col items-center justify-center transition-all duration-700 flex ${chatStarted ? 'py-4 shrink-0' : 'flex-1 pt-16'}`}>
               <MainHero chatStarted={chatStarted} />
-              {!chatStarted && <SuggestionCards />}
             </div>
 
             <div className="w-full flex-1 flex flex-col items-center justify-end overflow-hidden pb-4">

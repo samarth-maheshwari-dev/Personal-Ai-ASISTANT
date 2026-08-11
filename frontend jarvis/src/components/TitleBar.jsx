@@ -1,19 +1,27 @@
 import React from 'react';
-import { Minus, Square, X } from 'lucide-react';
+import { Minus, Square, X, Menu } from 'lucide-react';
 
 const TitleBar = () => {
   return (
     <div className="h-9 w-full flex items-center justify-between px-4 border-b border-jarvis-border bg-[#0a0d17]/80 backdrop-blur-md z-50 rounded-t-3xl">
-      {/* macOS Controls */}
-      <div className="flex items-center space-x-2 w-24">
-        <div className="group w-3 h-3 rounded-full bg-[#ff5f57] flex items-center justify-center cursor-pointer overflow-hidden">
-          <X size={8} className="opacity-0 group-hover:opacity-100 text-black/40" />
+      {/* Mobile Menu & macOS Controls */}
+      <div className="flex items-center w-24">
+        <div
+          className="md:hidden mr-2 cursor-pointer mt-0.5"
+          onClick={() => window.dispatchEvent(new CustomEvent('toggle-mobile-sidebar'))}
+        >
+          <Menu size={16} className="text-white/60 hover:text-white transition-colors" />
         </div>
-        <div className="group w-3 h-3 rounded-full bg-[#febc2e] flex items-center justify-center cursor-pointer overflow-hidden">
-          <Minus size={8} className="opacity-0 group-hover:opacity-100 text-black/40" />
-        </div>
-        <div className="group w-3 h-3 rounded-full bg-[#28c840] flex items-center justify-center cursor-pointer overflow-hidden">
-          <Square size={6} className="opacity-0 group-hover:opacity-100 text-black/40" />
+        <div className="hidden md:flex items-center space-x-2">
+          <div className="group w-3 h-3 rounded-full bg-[#ff5f57] flex items-center justify-center cursor-pointer overflow-hidden">
+            <X size={8} className="opacity-0 group-hover:opacity-100 text-black/40" />
+          </div>
+          <div className="group w-3 h-3 rounded-full bg-[#febc2e] flex items-center justify-center cursor-pointer overflow-hidden">
+            <Minus size={8} className="opacity-0 group-hover:opacity-100 text-black/40" />
+          </div>
+          <div className="group w-3 h-3 rounded-full bg-[#28c840] flex items-center justify-center cursor-pointer overflow-hidden">
+            <Square size={6} className="opacity-0 group-hover:opacity-100 text-black/40" />
+          </div>
         </div>
       </div>
 

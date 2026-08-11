@@ -14,10 +14,22 @@ const CommandBar = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
   const [currentThreadId, setCurrentThreadId] = useState(null);
+  const [chatStarted, setChatStarted] = useState(false);
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const logsEndRef = useRef(null);
   const wsRef = useRef(null);
+
+  useEffect(() => {
+    const handleStart = () => setChatStarted(true);
+    const handleClear = () => setChatStarted(false);
+    window.addEventListener('chat-started', handleStart);
+    window.addEventListener('chat-cleared', handleClear);
+    return () => {
+      window.removeEventListener('chat-started', handleStart);
+      window.removeEventListener('chat-cleared', handleClear);
+    };
+  }, []);
 
   // ── WebSocket connection for live logs ──
   useEffect(() => {
@@ -140,6 +152,13 @@ const CommandBar = () => {
   };
 
   const handleSubmit = async () => {
+    if (isListening) {
+      if (window.activeRecognition) window.activeRecognition.stop();
+      if (window.micCleanup) window.micCleanup();
+      setIsListening(false);
+      window.dispatchEvent(new CustomEvent('toggle-mic', { detail: { isListening: false } }));
+    }
+
     const cmd = input.trim();
     if (!cmd || isLoading) return;
 
@@ -183,6 +202,31 @@ const CommandBar = () => {
       }];
       setMessages(finalMsgs);
       saveMessagesToThread(tid, finalMsgs);
+
+      // -- TTS Speak --
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        // Remove markdown asterisks and any emojis so TTS doesn't say "sparkles"
+        const cleanContent = content
+          .replace(/\*/g, '')
+          .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '')
+          .trim();
+        const utterance = new SpeechSynthesisUtterance(cleanContent);
+        // Slightly higher pitch and standard rate for a more pleasing tone
+        utterance.pitch = 1.05;
+        utterance.rate = 1;
+
+        const voices = window.speechSynthesis.getVoices();
+        // Priority for pleasing female voices across different platforms (Windows, macOS, Chrome)
+        const preferred = voices.find(v =>
+          /google (uk|us) english female/i.test(v.name) ||
+          /samantha|zira|hazel|victoria|susan|karen|veena/i.test(v.name) ||
+          /female|woman/i.test(v.name)
+        ) || voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || voices.find(v => v.lang.startsWith('en'));
+
+        if (preferred) utterance.voice = preferred;
+        window.speechSynthesis.speak(utterance);
+      }
     } catch (err) {
       const errMsgs = [...newMsgs, {
         role: 'assistant', type: 'error',
@@ -204,9 +248,78 @@ const CommandBar = () => {
     }
   };
 
-  const handleMicToggle = () => {
+  const handleMicToggle = async () => {
     const newState = !isListening;
     setIsListening(newState);
+
+    if (newState) {
+      window.dispatchEvent(new CustomEvent('chat-cleared')); // Show globe instantly!
+      // 1. Setup speech recognition
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+
+        recognition.onresult = (e) => {
+          let finalTranscript = '';
+          for (let i = e.resultIndex; i < e.results.length; ++i) {
+            if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
+          }
+          if (finalTranscript) {
+            setInput(prev => (prev ? prev + ' ' : '') + finalTranscript);
+          }
+        };
+
+        recognition.onend = () => {
+          setIsListening(false);
+          window.dispatchEvent(new CustomEvent('toggle-mic', { detail: { isListening: false } }));
+          if (window.micCleanup) window.micCleanup();
+        };
+
+        window.activeRecognition = recognition;
+        recognition.start();
+      }
+
+      // 2. Setup frequency analyzer
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const analyzer = audioCtx.createAnalyser();
+        analyzer.fftSize = 256;
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyzer);
+        const dataArr = new Uint8Array(analyzer.frequencyBinCount);
+
+        const updateFreq = () => {
+          analyzer.getByteFrequencyData(dataArr);
+          let sum = 0;
+          for (let i = 0; i < dataArr.length; i++) sum += dataArr[i];
+          const avg = sum / dataArr.length;
+          // avg is typically 0 to 255
+          window.dispatchEvent(new CustomEvent('mic-frequency', { detail: { volume: avg } }));
+          window.micAnimFrame = requestAnimationFrame(updateFreq);
+        };
+        updateFreq();
+
+        window.micCleanup = () => {
+          if (window.micAnimFrame) cancelAnimationFrame(window.micAnimFrame);
+          stream.getTracks().forEach(t => t.stop());
+          if (audioCtx.state !== 'closed') audioCtx.close();
+          window.dispatchEvent(new CustomEvent('mic-frequency', { detail: { volume: 0 } }));
+        };
+      } catch (err) {
+        console.error("Mic access denied or err", err);
+      }
+    } else {
+      if (window.activeRecognition) {
+        window.activeRecognition.stop();
+      }
+      if (window.micCleanup) {
+        window.micCleanup();
+      }
+    }
+
     window.isMicActive = newState;
     window.dispatchEvent(new CustomEvent('toggle-mic', { detail: { isListening: newState } }));
   };
@@ -257,49 +370,58 @@ const CommandBar = () => {
         </div>
       )}
 
-      {/* Chat messages */}
-      {messages.length > 0 && (
-        <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent space-y-8 px-4 py-6 w-full flex flex-col">
-          {messages.map((msg, idx) => {
-            return (
-              <div key={idx} className="flex gap-4 w-full group">
-                <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-[#0a0d17] shadow-sm">
-                  {msg.role === 'user' ? (
-                    <User size={14} className="text-white/70" />
-                  ) : (
-                    <Cpu size={14} className={msg.type === 'error' ? "text-red-400" : "text-emerald-400"} />
-                  )}
+      {/* Chat messages container */}
+      <div className={`flex-1 w-full flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent ${!chatStarted ? 'hidden' : ''}`}>
+        {messages.length > 0 && (
+          <div className="space-y-8 px-4 py-6 w-full flex flex-col mt-auto">
+            {messages.map((msg, idx) => {
+              if (msg.role === 'user') {
+                return (
+                  <div key={idx} className="flex justify-end w-full group mb-2">
+                    <div className="max-w-[80%] md:max-w-[70%] px-5 py-3 rounded-2xl md:rounded-3xl bg-[#2f2f2f] text-white/95 text-[15px] leading-relaxed shadow-sm">
+                      <p className="whitespace-pre-wrap break-words">{renderMessageContent(msg.content)}</p>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div key={idx} className="flex gap-4 w-full group justify-start mb-2">
+                  <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-[#0a0d17] shadow-sm">
+                    <Cpu size={15} className={msg.type === 'error' ? "text-red-400" : "text-emerald-400"} />
+                  </div>
+                  <div className="flex-1 flex flex-col pt-1 w-full max-w-full overflow-hidden">
+                    <h3 className="text-[13px] font-semibold text-white/80 mb-1">Jarvis</h3>
+                    <div className={"w-full text-[15px] leading-relaxed " +
+                      (msg.type === 'error'
+                        ? "text-red-400"
+                        : "text-white/90")}>
+                      <p className="whitespace-pre-wrap break-words">{renderMessageContent(msg.content)}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 flex flex-col pt-1.5 w-full max-w-full overflow-hidden">
-                  <span className="text-[12px] font-semibold text-white/50 mb-1 tracking-wide">
-                    {msg.role === 'user' ? 'You' : 'Jarvis'}
-                  </span>
-                  <div className={"w-full text-[15px] leading-relaxed " +
-                    (msg.type === 'error'
-                      ? "text-red-400"
-                      : "text-white/90")}>
-                    <p className="whitespace-pre-wrap break-words">{renderMessageContent(msg.content)}</p>
+              );
+            })}
+            {isLoading && (
+              <div className="flex gap-4 w-full animate-pulse justify-start mb-2">
+                <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-[#0a0d17]">
+                  <Cpu size={15} className="text-emerald-400/50" />
+                </div>
+                <div className="flex-1 flex flex-col pt-1.5">
+                  <h3 className="text-[13px] font-semibold text-white/60 mb-1">Jarvis</h3>
+                  <div className="flex items-center gap-1 mt-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </div>
-            );
-          })}
-          {isLoading && (
-            <div className="flex gap-4 w-full animate-pulse">
-              <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-[#0a0d17]">
-                <Cpu size={14} className="text-emerald-400/50" />
-              </div>
-              <div className="flex-1 flex flex-col pt-1">
-                <span className="text-[11px] font-bold text-white/40 mb-1 uppercase tracking-wider">Jarvis</span>
-                <div className="text-[15px] italic text-white/40">Thinking...</div>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} className="h-4" />
-        </div>
-      )}
+            )}
+            <div ref={messagesEndRef} className="h-4" />
+          </div>
+        )}
+      </div>
 
-      <div className="relative w-full z-[60] mx-auto group">
+      <div className="relative w-full z-[60] mx-auto group shrink-0 mt-auto">
         <div className="absolute z-[-1] overflow-hidden h-full w-full rounded-2xl blur-[3px] before:absolute before:content-[''] before:z-[-2] before:w-[2000px] before:h-[2000px] before:bg-no-repeat before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:rotate-60 before:bg-[conic-gradient(#000,#402fb5_5%,#000_38%,#000_50%,#cf30aa_60%,#000_87%)] before:transition-all before:duration-2000 group-hover:before:rotate-[-120deg] group-focus-within:before:rotate-[420deg] group-focus-within:before:duration-[4000ms]"></div>
         <div className="absolute z-[-1] overflow-hidden h-full w-full rounded-2xl blur-[3px] before:absolute before:content-[''] before:z-[-2] before:w-[2000px] before:h-[2000px] before:bg-no-repeat before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:rotate-[82deg] before:bg-[conic-gradient(rgba(0,0,0,0),#18116a,rgba(0,0,0,0)_10%,rgba(0,0,0,0)_50%,#6e1b60,rgba(0,0,0,0)_60%)] before:transition-all before:duration-2000 group-hover:before:rotate-[-98deg] group-focus-within:before:rotate-[442deg] group-focus-within:before:duration-[4000ms]"></div>
         <div className="absolute z-[-1] overflow-hidden h-full w-full rounded-2xl blur-[2px] before:absolute before:content-[''] before:z-[-2] before:w-[2000px] before:h-[2000px] before:bg-no-repeat before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:rotate-[83deg] before:bg-[conic-gradient(rgba(0,0,0,0)_0%,#a099d8,rgba(0,0,0,0)_8%,rgba(0,0,0,0)_50%,#dfa2da,rgba(0,0,0,0)_58%)] before:brightness-140 before:transition-all before:duration-2000 group-hover:before:rotate-[-97deg] group-focus-within:before:rotate-[443deg] group-focus-within:before:duration-[4000ms]"></div>

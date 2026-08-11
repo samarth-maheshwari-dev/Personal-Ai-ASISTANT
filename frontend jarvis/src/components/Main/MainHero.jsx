@@ -6,11 +6,13 @@ const MainHero = ({ chatStarted = false }) => {
     <div className="flex flex-col items-center text-center max-w-2xl px-6">
       <motion.div
         animate={{
-          scale: chatStarted ? 0.65 : 1,
-          y: chatStarted ? 0 : 0
+          scale: chatStarted ? 0 : 1,
+          opacity: chatStarted ? 0 : 1,
+          height: chatStarted ? 0 : 'auto',
+          marginBottom: chatStarted ? 0 : 16
         }}
-        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="origin-top"
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="origin-bottom relative z-10"
       >
         <AiLoader size={200} text="Jarvis" />
       </motion.div>

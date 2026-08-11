@@ -2323,7 +2323,7 @@ class Jarvis:
             else:
                 self.browser_manager.open_url(arg)
 
-        elif cmd == "search":
+        elif cmd in ("search", "google", "find"):
             if arg and ('youtube' in arg.lower() or 'yt' in arg.lower()):
                 query = arg.lower().replace('youtube', '').replace(
                         'yt', '').replace('on', '').replace(
@@ -2331,8 +2331,10 @@ class Jarvis:
                 self.browser_manager.search_youtube(query)
             else:
                 if arg:
+                    import urllib.parse
+                    safe_query = urllib.parse.quote_plus(arg)
                     self.browser_manager.open_url(
-                        f"https://www.google.com/search?q={arg}")
+                        f"https://www.google.com/search?q={safe_query}")
             
         elif cmd == "open":
             if not arg:
