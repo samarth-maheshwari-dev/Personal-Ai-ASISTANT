@@ -112,7 +112,7 @@ Every model in the chain is managed through Ollama. **No external API keys requi
 - Windows 11 (Windows 10 may work)
 - Python 3.13+
 - Google Chrome installed
-- nircmd.exe (place in JARVIS folder — for volume control)
+- **Optional**: `nircmd.exe` (place in JARVIS folder for robust volume control) - [Download from NirSoft](https://www.nirsoft.net/utils/nircmd.html). Note: If not installed, JARVIS falls back to native Windows CoreAudio via `pycaw`.
 - Ollama installed — **required** (manages all AI models, cloud + local)
 
 **Step 1 — Clone the repo**
@@ -122,8 +122,9 @@ cd Personal-Ai-ASISTANT
 ```
 
 **Step 2 — Install dependencies**
+Instead of manually installing packages, use the provided requirements file which includes all backend API and engine dependencies:
 ```bash
-pip install pyautogui pygetwindow pywin32 rapidfuzz psutil winrt-runtime winrt-Windows.Media.Control python-dotenv requests yt-dlp ddgs pycaw comtypes
+pip install -r requirements.txt
 ```
 
 **Step 3 — Install Ollama and pull all models**
