@@ -1,17 +1,17 @@
-pyautogui
-pygetwindow
-pywin32
+pyautogui; sys_platform == 'win32'
+pygetwindow; sys_platform == 'win32'
+pywin32; sys_platform == 'win32'
 rapidfuzz
 psutil
-winrt-runtime
-winrt-Windows.Media.Control
-winrt-Windows.Foundation
-winrt-Windows.Foundation.Collections
+winrt-runtime; sys_platform == 'win32'
+winrt-Windows.Media.Control; sys_platform == 'win32'
+winrt-Windows.Foundation; sys_platform == 'win32'
+winrt-Windows.Foundation.Collections; sys_platform == 'win32'
 requests
 yt-dlp
 ddgs
-pycaw
-comtypes
+pycaw; sys_platform == 'win32'
+comtypes; sys_platform == 'win32'
 python-pptx
 send2trash
 fastapi
