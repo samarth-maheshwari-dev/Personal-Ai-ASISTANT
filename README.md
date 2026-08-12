@@ -1,193 +1,291 @@
-# JARVIS — Open-Source Full-Stack Desktop AI Assistant 🤖⚡
+# JARVIS — Open-Source Full-Stack AI Desktop Assistant 🤖⚡
 
 [![Python 3.13](https://img.shields.io/badge/Python-3.13+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React_18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org)
-[![Electron](https://img.shields.io/badge/Electron-47848F?style=for-the-badge&logo=electron&logoColor=white)](https://electronjs.org)
+[![React 18](https://img.shields.io/badge/React_18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org)
+[![Electron 30](https://img.shields.io/badge/Electron-47848F?style=for-the-badge&logo=electron&logoColor=white)](https://electronjs.org)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Ollama](https://img.shields.io/badge/Ollama-AI_Brain-black?style=for-the-badge)](https://ollama.ai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-> An agency-grade, open-source **Full-Stack Desktop AI Assistant** built for Windows. Integrates a sleek React/Electron frontend, a high-performance Python FastAPI backend, a multi-model Ollama AI Thinking Layer, Microsoft Neural Speech Synthesis, and native OS automation.
+An open-source **Full-Stack AI Desktop Assistant** for Windows. JARVIS combines a React/Electron desktop shell, an asynchronous FastAPI backend microservice, real-time WebSocket log streaming, a multi-model Ollama AI router, Microsoft Neural TTS, and native Windows OS automation.
 
 ---
 
-## 💡 What is JARVIS?
+## 📌 Architectural Overview
 
-**JARVIS** is not a simple chatbot skin or API wrapper. It is a complete, production-grade **Full-Stack AI Engineering System** designed to give you a personal Iron-Man-style assistant running locally on your machine.
+JARVIS is engineered as a local-first, multi-tier full-stack application. Rather than sending raw text to an external API, it processes input through a multi-stage intent pipeline that decides whether to execute a deterministic OS automation action, perform a web search, or invoke a multi-model AI reasoning chain.
 
-It unifies:
-1. **Modern Desktop UI**: Electron shell + React 18 dashboard with real-time WebSocket log streaming.
-2. **High-Speed Microservice Backend**: FastAPI Python server handling asynchronous command parsing and system automation.
-3. **Local & Cloud AI Brain**: Ollama multi-model priority fallback chain that thinks, reasons, and handles Hinglish naturally.
-4. **Neural Speech Synthesis**: Native Microsoft Edge Neural TTS delivering crystal-clear Indian female voice responses (`hi-IN-SwaraNeural` and `en-IN-NeerjaNeural`).
-5. **Windows OS Automation**: Native desktop window control, volume management, Spotify/YouTube web automation, and file generation.
+```
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │                       DESKTOP / FRONTEND LAYER                          │
+ │  Electron 30 Shell · React 18 · TailwindCSS · Framer Motion · Canvas    │
+ └───────────────────────────────────┬─────────────────────────────────────┘
+                                     │ HTTP REST (POST /api/command)
+                                     │ WebSocket (/ws Live Logs)
+                                     ▼
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │                        BACKEND SERVICE LAYER                            │
+ │            FastAPI Server (Python 3.13) · Uvicorn · LogStream           │
+ └───────────────────────────────────┬─────────────────────────────────────┘
+                                     │
+                                     ▼
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │                   INTENT & COMMAND ROUTER (brain.py)                    │
+ └───────┬───────────────────────────┼───────────────────────────┬─────────┘
+         │ Deterministic Action      │ AI Reasoning              │ Live Search
+         ▼                           ▼                           ▼
+ ┌───────────────┐           ┌───────────────┐           ┌───────────────┐
+ │ OS AUTOMATION │           │ OLLAMA ROUTER │           │  WEB SEARCH   │
+ │ Win32 / UWP   │           │ 5-Model Chain │           │ DuckDuckGo    │
+ │ CoreAudio     │           │ Cloud / Local │           │ Summarizer    │
+ │ Chrome/Spotify│           └───────┬───────┘           └───────────────┘
+ └───────┬───────┘                   │                           │
+         │                           └───────────┬───────────────┘
+         │                                       │ Response Text
+         ▼                                       ▼
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │                      NEURAL TTS ENGINE (edge-tts)                       │
+ │      Hinglish / English Latin Script  ➜ en-IN-NeerjaNeural (Indian Accent)│
+ │      Devanagari Hindi Script          ➜ hi-IN-SwaraNeural               │
+ └───────────────────────────────────┬─────────────────────────────────────┘
+                                     │ Base64 Audio Stream + JSON Response
+                                     ▼
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │                 REACT FRONTEND & AUDIO PLAYER EXECUTION                 │
+ └─────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 🛠️ Full-Stack Technology Stack
+## 🏗️ Technology Stack
 
-```
- 🖥️ FRONTEND LAYER         ⚡ BACKEND & API LAYER        🧠 AI & SPEECH ENGINE        💻 OS AUTOMATION
-┌─────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
-│  Electron 30 Shell  │   │   FastAPI (Python)   │   │  Ollama Router (5M)  │   │  Win32 & UWP API     │
-│  React 18 + Vite    │ ◄─┼─► Uvicorn Web Server ┼─► │  Microsoft Edge TTS  │ ◄─┼─► Pycaw / Nircmd     │
-│  TailwindCSS        │   │   WebSocket (/ws)    │   │  Web Search Engine   │   │  yt-dlp & Chrome API │
-│  Framer Motion      │   │   CORS & Subprocess  │   │  Hinglish Classifier │   │  FileSystem Engine   │
-└─────────────────────┘   └──────────────────────┘   └──────────────────────┘   └──────────────────────┘
-```
-
-| Stack Layer | Technologies Used | Purpose & Responsibilities |
+| Layer | Component | Description |
 |---|---|---|
-| **Frontend UI** | React 18, Vite, TailwindCSS, Framer Motion, Lucide Icons | Responsive Iron-Man dashboard, animated mic visualizers, command bar, dynamic message threads. |
-| **Desktop Shell** | Electron 30, Global Hotkeys (`Ctrl+Alt+J`), Node IPC | System tray integration, global overlay hotkey, background process management. |
-| **Backend API** | Python 3.13, FastAPI, Uvicorn, WebSockets | REST API (`POST /api/command`), real-time WebSocket stdout streaming (`/ws`), async execution. |
-| **AI Brain Layer** | Ollama Router, DuckDuckGo Search API | 5-model priority fallback, intent routing, web search summarization, custom system prompts. |
-| **Speech Engine** | `edge-tts`, `gTTS`, Web Speech API | Neural Indian Female TTS (`en-IN-NeerjaNeural` & `hi-IN-SwaraNeural`), `hi-IN` speech recognition. |
-| **OS Automation** | `pywin32`, `pycaw`, `nircmd`, `yt-dlp` | Window state control (open/close/minimize), CoreAudio volume, Spotify/YouTube Chrome automation. |
+| **Desktop Shell** | Electron 30, Node.js IPC, Windows API | Manages frameless desktop windowing, system tray integration, native media permissions, and global hotkeys (`Ctrl+Alt+J`). Spawns backend background processes quietly (`windowsHide: true`). |
+| **Frontend UI** | React 18, Vite 5, TailwindCSS, Framer Motion | Modern dashboard featuring animated canvas visualizers, dynamic chat thread persistence, voice input controls, and custom title bars. |
+| **Backend API** | Python 3.13, FastAPI, Uvicorn | Asynchronous web server exposing REST endpoints (`/api/command`, `/api/tts`, `/api/system-prompt`) and real-time WebSocket log streaming (`/ws`). |
+| **AI Orchestration** | `ai/ollama_router.py`, `brain.py` | 5-model priority fallback pipeline (Cloud proxies to local Ollama models) with context-aware Hinglish intent classification. |
+| **Speech Pipeline** | `edge-tts`, `gTTS`, Web Speech API | Dual-mode Microsoft Edge Neural Speech Synthesis (`en-IN-NeerjaNeural` & `hi-IN-SwaraNeural`) paired with `hi-IN` Web Speech STT recognition. |
+| **OS Automation** | `pywin32`, `pycaw`, `nircmd`, `yt-dlp` | Win32 window state management, CoreAudio volume manipulation, Chrome tab control, Spotify web playback, and Desktop file operations. |
+| **State & Storage** | LocalStorage, JSON File Store | Thread history stored in client LocalStorage; system configuration, memory context, and daily logs managed via structured JSON storage (`memory_manager.py`). |
 
 ---
 
-## ⚡ What JARVIS Can Do (Capability Matrix)
+## ⚡ Feature Implementation Matrix
 
-| Category | Features & Commands | Tech & Architecture Under the Hood | Status |
+| Category | Capability / Command | Technical Implementation | Status |
 |---|---|---|---|
-| **Window Management** | `chrome kholo`, `notepad band karo`, `maximize`, `minimize`, `focus` | `pywin32` + Windows EnumWindows API + UWP app launcher. Remembers last active window context. | ✅ Production |
-| **Hinglish Parser** | `awaaz badhaao`, `gaana bajao`, `bnd karo`, `pehle wala chalao` | Custom rule-based Hinglish-to-English dictionary + Ollama intent classifier. Zero translation latency. | ✅ Production |
-| **Volume Control** | `volume 50% karo`, `mute karo`, `awaaz badhaao / ghatao` | CoreAudio Windows API via `pycaw` with automatic fallback to `nircmd.exe`. | ✅ Production |
-| **Neural Female Voice** | Natural Indian Female accent voice output (zero British/American tone) | `edge-tts` streaming base64 MP3 (`en-IN-NeerjaNeural` for Latin script & `hi-IN-SwaraNeural` for Devanagari). | ✅ Production |
-| **Speech Input (STT)** | Real-time speech recognition for Hindi, Hinglish, & English | Web Speech API localized to `hi-IN` with visual soundwave animation. | ✅ Production |
-| **YouTube Automation** | `search lofi music on youtube`, `play 2nd video` | `yt-dlp` metadata extraction + Chrome automation. Shows top video results directly. | ✅ Production |
-| **Spotify Control** | `play shape of you on spotify`, `next on spotify`, `pause` | Spotify Web player automation running seamlessly inside a dedicated Chrome tab. | ✅ Production |
-| **AI Thinking Layer** | Conversational queries, code writing, math, flirty/nerdy banter | 5-model Ollama fallback priority chain (Cloud Proxy -> Local Gemma -> Qwen -> Phi). | ✅ Production |
-| **Real-Time Web Search** | `weather in Indore today`, `latest news`, `cricket score` | Dual-attempt web search via DuckDuckGo API + LLM factual summarizer. | ✅ Production |
-| **File Generation** | `create file sort.py and write bubble sort code` | Direct file system IO with automated code snippet cleanup and Desktop path resolution. | ✅ Production |
-| **Context Memory** | `memory remember my name Samarth`, `memory recall` | Persistent JSON key-value store, daily logs, and session history management. | ✅ Production |
-| **Compound Commands** | `open chrome then search lo-fi music then volume 40` | Multi-command regex splitter (`then`, `phir`, `aur`, `and`) executed sequentially. | ✅ Production |
+| **Window Control** | `chrome kholo`, `notepad band karo`, `minimize`, `maximize`, `focus` | Win32 API via `pywin32` + UWP App Launcher (`explorer.exe shell:AppsFolder\...`). Tracks active window handles. | ✅ Implemented |
+| **Volume Control** | `volume 50% karo`, `mute karo`, `awaaz badhaao / ghatao` | CoreAudio Windows API via `pycaw` with fallback execution via `nircmd.exe`. | ✅ Implemented |
+| **Hinglish Parser** | `awaaz badhaao`, `gaana bajao`, `bnd karo`, `kholo` | Rule-based Hinglish translation layer + Ollama fallback. No external translation API required. | ✅ Implemented |
+| **Neural TTS** | Natural Indian Female accent voice output | `edge-tts` streaming base64 MP3 (`en-IN-NeerjaNeural` for Hinglish/English Latin script; `hi-IN-SwaraNeural` for Devanagari). | ✅ Implemented |
+| **Speech Input (STT)** | Speech-to-Text input with animated waveform | Web Speech API configured to `hi-IN` with visual pulse status states in React. | ✅ Implemented |
+| **YouTube Automation** | `search lofi music on youtube`, `play 2nd video` | Metadata extraction via `yt-dlp` paired with Chrome process automation. | ✅ Implemented |
+| **Spotify Automation** | `play shape of you on spotify`, `next on spotify` | Spotify Web player automation running inside a dedicated Chrome browser instance. | ✅ Implemented |
+| **AI Reasoning** | General chat, code generation, technical Q&A, math | 5-model priority chain handled via Ollama Gateway (`ai/ollama_router.py`). | ✅ Implemented |
+| **Web Search** | `weather in Indore today`, `latest news update` | Real-time multi-attempt search using DuckDuckGo (`ddgs`) with LLM factual summarization. | ✅ Implemented |
+| **File Generation** | `create file sort.py and write bubble sort code` | Direct disk IO with automated markdown code block cleaning, saving directly to user Desktop. | ✅ Implemented |
+| **Memory System** | `memory remember my name Samarth`, `memory recall` | Persistent JSON storage (`memory_manager.py`) with 1GB automated log pruning. | ✅ Implemented |
+| **Global Overlay** | `Ctrl+Alt+J` shortcut key | Electron `globalShortcut` API registering system-wide hotkeys to toggle/focus overlay. | ✅ Implemented |
+| **Silent Backend** | Background execution without visible CMD windows | Node `child_process.spawn` detached with `windowsHide: true` for `server.py` & `ollama`. | ✅ Implemented |
 
 ---
 
-## 🧠 How It Works with AI
+## 🧩 AI Architecture & Multi-Model Routing
 
-JARVIS uses a hybrid AI orchestration architecture:
+JARVIS unifies all AI operations under a single router interface (`ai/ollama_router.py`) connected to a local Ollama instance (`http://localhost:11434`). It executes requests against a prioritized fallback chain:
 
 ```
-[ User Query (GUI / Voice) ]
-             │
-             ▼
-   FastAPI POST /api/command
-             │
-             ▼
-   Intent Classification (brain.py)
-             │
- ┌───────────┴─────────────────────────────┐
- │                                         │
- ▼                                         ▼
-[ PC Action Command ]            [ AI Thinking Layer ]
-(Open/Close/Volume/File)        (Query / Chat / Code / Web Search)
- │                                         │
- │                                         ▼
- │                            Ollama Priority Fallback Chain
- │                            ┌──────────────────────────────┐
- │                            │ 1. minimax-m3:cloud (30s)    │
- │                            │ 2. nemotron-3-super (30s)    │
- │                            │ 3. gemma4:e2b (Local 120s)   │
- │                            │ 4. qwen2.5:3b (Local 60s)    │
- │                            │ 5. phi3:mini (Local 60s)     │
- │                            └──────────────┬───────────────┘
- │                                           │
- └───────────────────┬───────────────────────┘
-                     │
-                     ▼
-       Neural TTS Engine (edge-tts)
-   ├── Devanagari Hindi → hi-IN-SwaraNeural
-   └── Hinglish/Latin   → en-IN-NeerjaNeural (Indian Accent)
-                     │
-                     ▼
-       [ Base64 Audio + Structured JSON ]
-                     │
-                     ▼
-       [ React GUI + HTML5 Audio + Live WebSocket Logs ]
+                      [ User Input Query ]
+                                │
+                                ▼
+                   ┌──────────────────────────┐
+                   │   ai/ollama_router.py    │
+                   └────────────┬─────────────┘
+                                │
+       ┌────────────────────────┼────────────────────────┐
+       │ Priority 1             │ Priority 2             │ Priority 3
+       ▼ (30s)                  ▼ (30s)                  ▼ (120s)
+┌──────────────┐         ┌──────────────┐         ┌──────────────┐
+│ minimax-m3   │ ──────► │ nemotron-3   │ ──────► │ gemma4:e2b   │
+│ :cloud       │ Timeout │ :cloud       │ Timeout │ (Local)      │
+└──────────────┘         └──────────────┘         └──────┬───────┘
+                                                         │ Timeout
+                                                         ▼
+                                                  ┌──────────────┐
+                                                  │ qwen2.5:3b   │ (Priority 4 - 60s)
+                                                  └──────┬───────┘
+                                                         │ Timeout
+                                                         ▼
+                                                  ┌──────────────┐
+                                                  │ phi3:mini    │ (Priority 5 - 60s)
+                                                  └──────────────┘
+```
+
+1. **Cloud Proxies (Priority 1–2)**: High-speed models accessed through Ollama's model gateway for fast responses when online.
+2. **Local Models (Priority 3–5)**: Fully offline local models running on CPU/GPU hardware. If internet is disconnected or cloud models time out, execution automatically fails over to local models without throwing user-facing errors.
+
+---
+
+## 📂 Project Structure
+
+```
+JARVIS/
+├── ai/
+│   └── ollama_router.py       # Priority fallback chain & Ollama API adapter
+├── memory/
+│   ├── memory_manager.py      # JSON-backed memory & log manager
+│   ├── history.json           # Conversation memory
+│   └── daily_log.json         # Daily activity log
+├── frontend jarvis/
+│   ├── main.js                # Electron main process (IPC, hotkeys, process spawner)
+│   ├── package.json           # Frontend dependencies & build config
+│   ├── dist/                  # Production Vite build artifacts
+│   └── src/
+│       ├── App.jsx            # React root component
+│       └── components/
+│           ├── AppShell.jsx   # Layout wrapper & hotkey handlers
+│           ├── TitleBar.jsx   # Custom window control bar
+│           ├── CommandBar/    # Input bar, mic STT & Audio playback
+│           ├── Main/          # Canvas visualizer & quick cards
+│           └── Sidebar/       # Chat thread navigation & drawer
+├── brain.py                    # Intent classifier & query router
+├── jarvis.py                   # Core OS automation engine (Win32, Volume, Chrome, Media)
+├── server.py                   # FastAPI server, WebSockets & Edge-TTS engine
+├── wake_jarvis.py              # Hotkey daemon & background trigger listener
+├── requirements.txt            # Python dependencies
+└── README.md                   # System documentation
 ```
 
 ---
 
-## 📥 How to Download and Run JARVIS (Easy Setup)
+## ⚙️ Installation & Setup Guide
 
 ### Prerequisites
-- **Windows 11 / 10**
-- **Python 3.13+** installed
-- **Node.js 18+** installed
-- **Ollama** installed from [ollama.ai](https://ollama.ai)
+- **Operating System**: Windows 10 / Windows 11 (64-bit)
+- **Python**: Version 3.13 or higher
+- **Node.js**: Version 18.0 or higher
+- **Ollama**: Installed from [ollama.ai](https://ollama.ai)
 
 ---
 
-### Step 1 — Clone the Repository
+### Step 1 — Clone Repository
 ```bash
 git clone https://github.com/samarth-maheshwari-dev/Personal-Ai-ASISTANT.git
 cd Personal-Ai-ASISTANT
 ```
 
-### Step 2 — Set Up Python Backend Environment
+### Step 2 — Set Up Python Backend
 ```bash
 # Create virtual environment
 python -m venv .venv
 
-# Activate virtual environment (Windows PowerShell)
+# Activate virtual environment (PowerShell)
 .venv\Scripts\Activate.ps1
 
-# Install dependencies
+# Install Python dependencies
 pip install -r requirements.txt
 ```
 
-### Step 3 — Pull AI Models (Ollama)
+### Step 3 — Install AI Models (Ollama)
+Ensure Ollama is running, then pull at least one local model for offline fallback:
 ```bash
 ollama pull qwen2.5:3b
 ollama pull phi3:mini
 ```
 
-### Step 4 — Launch the Backend Server
-```bash
-python server.py
-# → FastAPI Server active at http://localhost:8000
-```
+### Step 4 — Run the Application
 
-### Step 5 — Launch the Desktop App / Frontend UI
-In a new terminal tab:
+#### Option A: Run as Desktop App (Electron Shell)
 ```bash
+# Terminal 1: Start Backend API
+python server.py
+
+# Terminal 2: Launch Electron Application
 cd "frontend jarvis"
 npm install
-
-# Run as Electron Desktop Application:
 npm run electron .
+```
 
-# Or run in Web Browser:
+#### Option B: Run in Development Mode (Vite + Web Browser)
+```bash
+# Terminal 1: Start Backend API
+python server.py
+
+# Terminal 2: Start Vite Dev Server
+cd "frontend jarvis"
 npm run dev
-# → Open http://localhost:5173
+# Open http://localhost:5173 in Google Chrome
 ```
 
 ---
 
-## 🚀 What's Coming Next (Roadmap)
+## 📡 API Reference
 
-- [ ] **Phase 2 — Remote Control via Mobile Web 📱**: Mobile PWA dashboard connecting over WebSockets to control your PC remotely from anywhere.
-- [ ] **Phase 3 — WhatsApp & Instagram Automation 💬**: Automated DM responses and message dispatch via Playwright browser sessions.
-- [ ] **Phase 4 — PDF Document RAG & Speech Analysis 📖**: Local vector embeddings for instant document Q&A and PDF summarization.
-- [ ] **Phase 5 — Autonomous Multi-Step Agentic Workflows 🤖**: Multi-tool agent execution (e.g. `book a cab`, `summarize top 5 emails and reply`).
+### 1. Execute Command or Chat
+`POST /api/command`
+```json
+// Request Payload
+{
+  "input": "chrome kholo then set volume 40",
+  "system_prompt": "Optional custom system prompt override"
+}
+
+// Response Payload
+{
+  "message": "Opening Chrome for you right now, sir!",
+  "type": "command",
+  "action": "open",
+  "target": "chrome",
+  "model_used": "Ollama",
+  "success": true,
+  "timestamp": "2026-08-12T14:30:00.000000",
+  "audio": "data:audio/mp3;base64,SUQzBAAAAAAA..."
+}
+```
+
+### 2. Standalone Text-to-Speech
+`POST /api/tts`
+```json
+// Request Payload
+{
+  "text": "Arre, kya hua Samarth?"
+}
+
+// Response Payload
+{
+  "audio": "data:audio/mp3;base64,SUQzBAAAAAAA..."
+}
+```
+
+### 3. WebSocket Real-Time Logs
+`GET /ws`
+- Connects to backend WebSocket stream. Receives live stdout text lines formatted for terminal displays.
 
 ---
 
-## 🤝 Open Source & Contributing
+## ⚠️ System Limitations & Caveats
 
-JARVIS is 100% open-source under the **MIT License**. Contributions, bug reports, and pull requests are welcome!
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AwesomeFeature`)
-3. Commit your Changes (`git commit -m 'Add AwesomeFeature'`)
-4. Push to the Branch (`git push origin feature/AwesomeFeature`)
-5. Open a Pull Request
+- **OS Specificity**: Window management and volume control functions rely on native Windows Win32 APIs (`pywin32`) and CoreAudio (`pycaw`), making OS automation functional on Windows only.
+- **Chrome Requirement**: Browser automation scripts expect Google Chrome to be installed in standard Windows executable paths.
+- **Hardware Resources**: Local Ollama model execution speed depends on available system RAM/VRAM. Minimum 8GB system RAM recommended.
 
 ---
 
-*Built with ❤️ by **Samarth Maheshwari** — Indore, India 🇮🇳*  
-*Python 3.13 | FastAPI | Electron | React | Ollama | MIT License*
+## 🚧 Development Roadmap
+
+- [x] **Phase 1**: Core OS Automation Engine, Electron + React UI, Ollama Router, Indian Female Neural TTS.
+- [ ] **Phase 2 — Mobile Web Remote**: Lightweight PWA interface connecting over WebSockets to control desktop tasks remotely from a smartphone.
+- [ ] **Phase 3 — Messaging Automation**: Automated WhatsApp and Instagram message dispatching via Playwright browser contexts.
+- [ ] **Phase 4 — Local Document RAG**: Local PDF and document parsing pipeline with vector embeddings for semantic document search.
+
+---
+
+## 📜 License & Acknowledgments
+
+This project is open-source under the [MIT License](LICENSE).
+
+**Author**: Samarth Maheshwari  
+*Full-Stack Engineer & AI Automation Builder — Indore, India 🇮🇳*  
+- GitHub: [@samarth-maheshwari-dev](https://github.com/samarth-maheshwari-dev)
