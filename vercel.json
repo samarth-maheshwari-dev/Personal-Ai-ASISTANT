@@ -1,0 +1,6 @@
+{
+    "framework": "vite",
+    "installCommand": "cd \"frontend jarvis\" && npm install",
+    "buildCommand": "cd \"frontend jarvis\" && npm run build",
+    "outputDirectory": "frontend jarvis/dist"
+}
