@@ -8,7 +8,7 @@
 [![Ollama](https://img.shields.io/badge/Ollama-AI_Brain-black?style=for-the-badge)](https://ollama.ai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-JARVIS is an open-source **Full-Stack Desktop AI Assistant** built for Windows. It integrates an Electron desktop shell, a React 18 frontend dashboard, an asynchronous FastAPI backend microservice, real-time WebSocket log streaming, a 5-model Ollama AI priority router, Microsoft Edge Neural Speech Synthesis, and native Windows OS automation.
+JARVIS is an open-source **Full-Stack Desktop AI Assistant** built for Windows. It integrates an Electron desktop shell, a React 18 frontend dashboard, an asynchronous FastAPI backend service, real-time WebSocket log streaming, multi-model AI orchestration with automatic cloud-to-local fallback via Ollama, Microsoft Edge Neural Speech Synthesis, and native Windows OS automation.
 
 ---
 
@@ -105,7 +105,7 @@ JARVIS utilizes a hybrid persistence model:
 
 1. **Client State (LocalStorage)**: Chat thread history (`jarvis-threads`), active thread selections, and custom system prompt overrides are stored directly in the user's browser LocalStorage.
 2. **Server State (JSON Storage Engine)**: Backend context, daily activity logs, last active application tracking, and long-term key-value memories are managed by `memory/memory_manager.py` using structured JSON files (`history.json`, `daily_log.json`, `last_app.json`, `app_history.json`).
-3. **Legacy Artifact Note**: The repository contains an early Node.js/Express stub (`frontend jarvis/backend/server.js` and `db.js`). This stub is **unused** in the primary application lifecycle; the active production backend is `server.py` (FastAPI).
+3. **Legacy Artifact Note**: The repository contains an early Node.js/Express stub (`frontend jarvis/backend/server.js` and `db.js`). This stub is **unused** in the primary application lifecycle; the active application backend is `server.py` (FastAPI).
 
 ---
 
@@ -113,7 +113,7 @@ JARVIS utilizes a hybrid persistence model:
 
 - **Local Application Scope**: JARVIS is built as a single-user local desktop application.
 - **CORS Configuration**: `server.py` configures `allow_origins=["*"]` to allow seamless local cross-origin communication between the Electron desktop shell (`file://` or Vite dev server `http://localhost:5173`) and the FastAPI backend (`http://localhost:8000`).
-- **Network Boundaries**: The backend API does not implement remote authentication/OAuth. It is intended strictly for local execution (`127.0.0.1`).
+- **Network Boundaries**: The backend API does not implement remote authentication/OAuth. It is intended strictly for local execution (`127.0.0.1`). **Do not expose port 8000 directly to an untrusted network.**
 
 ---
 
@@ -172,6 +172,11 @@ JARVIS utilizes a hybrid persistence model:
 ### 5. Real-Time Log Stream
 `GET /ws`
 - WebSocket connection streaming live stdout log strings to connected frontend clients.
+
+### 6. Restart Engine
+`POST /api/restart`
+- Resets the JARVIS singleton instance and clears temporary backend state.
+- Returns `{ "status": "restarted", "message": "JARVIS engine re-initialized successfully." }`
 
 ---
 
@@ -271,6 +276,7 @@ npm run dev
 1. **Windows OS Dependency**: Win32 window handles (`pywin32`) and CoreAudio controls (`pycaw`) require Microsoft Windows.
 2. **Chrome Path Requirement**: Browser automation assumes Google Chrome is installed in standard Windows system paths.
 3. **Local Hardware Constraints**: Local LLM execution via Ollama requires sufficient system RAM/VRAM (8GB+ recommended).
+4. **Ollama Installation Path**: The Electron shell (`main.js`) currently expects Ollama at the default installation path used on the development machine (`C:\Users\ASUS\...\Ollama\ollama.exe`). Users with a different installation path may need to update `main.js`.
 
 ---
 
