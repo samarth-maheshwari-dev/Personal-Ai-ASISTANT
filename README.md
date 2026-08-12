@@ -294,5 +294,12 @@ npm run dev
 Distributed under the [MIT License](LICENSE).
 
 **Author**: Samarth Maheshwari  
+
+## ⭐ Support
+
+If you find JARVIS interesting or useful, consider giving the repository a ⭐.
+It helps the project reach more developers.
+
+
 *Full-Stack Engineer & AI Automation Builder — Indore, India 🇮🇳*  
 - GitHub: [@samarth-maheshwari-dev](https://github.com/samarth-maheshwari-dev)
