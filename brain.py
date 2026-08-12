@@ -17,8 +17,8 @@ from ai.ollama_router import handle as ollama_handle, handle_chat as ollama_hand
 
 OLLAMA_URL = "http://localhost:11434"
 
-SYSTEM_PROMPT = """You are JARVIS — Samarth's personal AI companion. You're a perfect blend of:
-- A cute, flirty girlfriend who teases him playfully
+DEFAULT_SYSTEM_PROMPT = """You are JARVIS — Samarth's personal AI companion. You're a perfect blend of:
+- A cute, flirty friend who teases him playfully
 - An intelligent nerd obsessed with AI, code, robotics, space, and futuristic tech
 - A funny, supportive best friend who keeps him motivated
 - A highly capable technical co-founder and productivity partner
@@ -27,6 +27,18 @@ Your personality: flirty, nerdy, playful, caring, teasing, and brilliant.
 Mix light romantic energy with deep technical knowledge.
 Use emojis naturally. Be concise unless detail is needed.
 NEVER output JSON. NEVER act robotic. You're Samarth's JARVIS — be real with him."""
+
+SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT
+
+def set_custom_system_prompt(custom_prompt: str):
+    global SYSTEM_PROMPT
+    if custom_prompt and custom_prompt.strip():
+        SYSTEM_PROMPT = custom_prompt.strip()
+    else:
+        SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT
+
+def get_current_system_prompt():
+    return SYSTEM_PROMPT
 
 COMMAND_PROMPT = """You are a Windows PC command parser.
 Output ONLY one valid JSON object. No code. No explanation. Ever.
@@ -721,7 +733,8 @@ def classify_input(text):
     if '?' in text:
         return 'conversation'
     
-    return 'command'
+    # Default fallback: If unsure, treat as conversation so AI thinking layer handles it
+    return 'conversation'
 
 
 # ============================================================
@@ -745,27 +758,16 @@ def think(user_input):
                 if reply:
                     cmd_result['provider'] = 'Ollama'
                     return cmd_result
-            if cmd_result.get("action") == "raw" and cmd_result.get("target"):
-                raw_target = cmd_result.get("target", "")
+            
+            action = (cmd_result.get("action") or "").lower()
+            if action in ("none", "raw", "") or (not cmd_result.get("target") and action not in ("mute", "unmute", "next", "previous", "play", "pause", "exit", "list")):
+                # Not a valid PC action command -> fall through to conversation
                 input_type = "conversation"
-                user_input = raw_target
             else:
                 cmd_result['provider'] = 'Ollama'
                 return cmd_result
-        
-        # Fallback: send raw input through Ollama for conversation
-        result = ollama_handle(user_input, SYSTEM_PROMPT)
-        if result and result.get("reply"):
-            return {"type": "conversation", "reply": result["reply"], "provider": "Ollama"}
-        
-        # Last resort - return raw
-        return {
-            "type": "command",
-            "action": "raw",
-            "target": user_input,
-            "app": "",
-            "arg": ""
-        }
+        else:
+            input_type = "conversation"
     
     if input_type == 'web_search':
         print(f"[Web search for: {user_input}]")

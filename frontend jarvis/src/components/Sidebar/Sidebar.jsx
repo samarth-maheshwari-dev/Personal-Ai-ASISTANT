@@ -201,7 +201,9 @@ const Sidebar = () => {
 
         {/* Bottom Section */}
         <div className="mt-auto border-t border-jarvis-white/5 bg-[#0a0d17]/60 p-2">
-          <NavItem icon={Settings} label="Settings" />
+          <div onClick={() => window.dispatchEvent(new CustomEvent('open-personality'))}>
+            <NavItem icon={Settings} label="Personality & Prompt" />
+          </div>
         </div>
       </div>
     </>

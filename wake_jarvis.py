@@ -76,7 +76,7 @@ def is_jarvis_running():
 
 
 def open_terminal():
-    """Triggers the launch of the JARVIS terminal with duplicate detection."""
+    """Triggers the launch/focus of the JARVIS GUI Application."""
     global last_triggered_time
 
     current_time = time.time()
@@ -85,34 +85,21 @@ def open_terminal():
 
     last_triggered_time = current_time
 
-    if is_jarvis_running():
-        log_message("[Wake] JARVIS already running! Skipping launch.")
-        print("[Wake] JARVIS already running!")
-        winsound.Beep(1000, 100)  # One short beep as requested
-        return
-
     # Success beeps
     winsound.Beep(1000, 200)
     winsound.Beep(1200, 200)
 
-    # Launch logic
+    # Launch GUI logic via start_jarvis_gui.vbs or npx electron .
     try:
-        subprocess.Popen([
-            'wt.exe',
-            '-d', JARVIS_DIR,
-            VENV_PYTHON, JARVIS_SCRIPT
-        ], creationflags=subprocess.CREATE_NEW_CONSOLE)
-        log_message("[Wake] Launched JARVIS via Windows Terminal.")
-    except (FileNotFoundError, Exception):
-        # Fallback to cmd.exe
-        try:
-            full_cmd = f'"{VENV_PYTHON}" "{JARVIS_SCRIPT}"'
-            subprocess.Popen([
-                'cmd.exe', '/k', full_cmd
-            ], creationflags=subprocess.CREATE_NEW_CONSOLE)
-            log_message("[Wake] Launched JARVIS via CMD fallback.")
-        except Exception as e:
-            log_message(f"[Wake] ERROR launching terminal: {e}")
+        vbs_script = os.path.join(JARVIS_DIR, "start_jarvis_gui.vbs")
+        if os.path.exists(vbs_script):
+            subprocess.Popen(['wscript.exe', vbs_script], cwd=JARVIS_DIR)
+        else:
+            frontend_dir = os.path.join(JARVIS_DIR, "frontend jarvis")
+            subprocess.Popen(['npx.cmd', 'electron', '.'], cwd=frontend_dir)
+        log_message("[Wake] Focused/Launched JARVIS GUI Application.")
+    except Exception as e:
+        log_message(f"[Wake] ERROR launching GUI: {e}")
 
 
 def hotkey_thread():

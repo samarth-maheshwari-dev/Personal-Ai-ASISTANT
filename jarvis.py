@@ -23,15 +23,8 @@ if not NIRCMD_AVAILABLE:
     print("[Jarvis] WARNING: nircmd.exe not found in JARVIS folder. Volume control is disabled.")
 
 
-def install_packages(packages):
-    for pkg in packages:
-        try:
-            __import__(pkg)
-        except ImportError:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
-
-
-install_packages(["pyautogui", "pygetwindow", "pywin32", "rapidfuzz", "psutil", "winrt-runtime", "winrt-Windows.Media.Control", "winrt-Windows.Foundation", "winrt-Windows.Foundation.Collections", "requests", "yt-dlp", "ddgs", "pycaw", "comtypes", "python-pptx", "send2trash"])
+# Runtime dependencies checked beforehand in environment
+# install_packages(["pyautogui", "pygetwindow", "pywin32", "rapidfuzz", "psutil", "winrt-runtime", "winrt-Windows.Media.Control", "winrt-Windows.Foundation", "winrt-Windows.Foundation.Collections", "requests", "yt-dlp", "ddgs", "pycaw", "comtypes", "python-pptx", "send2trash"])
 
 
 import pyautogui
@@ -2679,11 +2672,14 @@ class Jarvis:
             self._last_yt_search = query
             self.memory.log_activity('youtube_search', {'query': query})
 
-            if auto_pick:
+            if pick_flag:
+                self.browser_manager.search_youtube_with_pick(query, pick_num)
+            elif auto_pick:
                 self.browser_manager.search_youtube_autopick(query, auto_pick)
             elif auto:
                 self.browser_manager.search_youtube(query, True)
             else:
+                # Default: Show search results list without auto-playing first video
                 self.browser_manager.search_youtube(query, False)
 
         elif cmd == "web_search" or cmd == "websearch":

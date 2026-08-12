@@ -6,18 +6,25 @@ import MainHero from './Main/MainHero';
 import StatusStrip from './CommandBar/StatusStrip';
 import SuggestionCards from './Main/SuggestionCards';
 import { DottedSurface } from './ui/dotted-surface';
+import PersonalityModal from './Settings/PersonalityModal';
 
 const AppShell = () => {
   const [chatStarted, setChatStarted] = useState(false);
+  const [isPersonalityOpen, setIsPersonalityOpen] = useState(false);
 
   useEffect(() => {
     const handleStart = () => setChatStarted(true);
     const handleClear = () => setChatStarted(false);
+    const handleOpenPersonality = () => setIsPersonalityOpen(true);
+
     window.addEventListener('chat-started', handleStart);
     window.addEventListener('chat-cleared', handleClear);
+    window.addEventListener('open-personality', handleOpenPersonality);
+
     return () => {
       window.removeEventListener('chat-started', handleStart);
       window.removeEventListener('chat-cleared', handleClear);
+      window.removeEventListener('open-personality', handleOpenPersonality);
     };
   }, []);
 
@@ -52,6 +59,11 @@ const AppShell = () => {
           </main>
         </div>
       </div>
+
+      <PersonalityModal
+        isOpen={isPersonalityOpen}
+        onClose={() => setIsPersonalityOpen(false)}
+      />
     </div>
   );
 };

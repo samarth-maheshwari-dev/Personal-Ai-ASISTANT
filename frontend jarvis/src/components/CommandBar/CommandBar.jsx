@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Mic, ArrowUp, Loader2, Terminal, User, Cpu } from 'lucide-react';
+import { Plus, Mic, ArrowUp, Loader2, Terminal, User, Cpu, Copy, Check } from 'lucide-react';
 
 const API_URL = 'http://localhost:8000';
 const WS_URL = 'ws://localhost:8000/ws';
@@ -151,7 +151,17 @@ const CommandBar = () => {
     window.dispatchEvent(new CustomEvent('threads-updated'));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (overrideText = null) => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    if (window.currentTTSAudio) {
+      try {
+        window.currentTTSAudio.pause();
+        window.currentTTSAudio = null;
+      } catch (e) { }
+    }
+
     if (isListening) {
       if (window.activeRecognition) window.activeRecognition.stop();
       if (window.micCleanup) window.micCleanup();
@@ -159,7 +169,7 @@ const CommandBar = () => {
       window.dispatchEvent(new CustomEvent('toggle-mic', { detail: { isListening: false } }));
     }
 
-    const cmd = input.trim();
+    const cmd = typeof overrideText === 'string' ? overrideText.trim() : input.trim();
     if (!cmd || isLoading) return;
 
     let tid = currentThreadId;
@@ -179,20 +189,21 @@ const CommandBar = () => {
     saveMessagesToThread(tid, newMsgs, cmd);
 
     try {
+      const customPrompt = localStorage.getItem('jarvis-system-prompt') || '';
       const res = await fetch(API_URL + '/api/command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input: cmd }),
+        body: JSON.stringify({ input: cmd, system_prompt: customPrompt }),
       });
       if (!res.ok) throw new Error('Server error: ' + res.status);
       const data = await res.json();
 
       let content = data.message || 'No response';
 
-      if (data.action && data.message.trim().toLowerCase() === cmd.toLowerCase()) {
+      if (data.type === 'command' && (!content || content.toLowerCase() === cmd.toLowerCase())) {
         content = typeof data.target === 'string' && data.target.trim().length > 0
-          ? `Opening ${data.target} for you sir ✨`
-          : `Executing command sir ✨`;
+          ? `Executing ${data.action || 'command'} ${data.target} for you sir ✨`
+          : `Executing command for you sir ✨`;
       }
 
       const finalMsgs = [...newMsgs, {
@@ -203,29 +214,107 @@ const CommandBar = () => {
       setMessages(finalMsgs);
       saveMessagesToThread(tid, finalMsgs);
 
-      // -- TTS Speak --
+      // -- TTS Speak (Backend High-Quality Hindi Female Neural Audio & Fallback Guard) --
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
-        // Remove markdown asterisks and any emojis so TTS doesn't say "sparkles"
+      }
+      if (window.currentTTSAudio) {
+        try {
+          window.currentTTSAudio.pause();
+          window.currentTTSAudio = null;
+        } catch (e) { }
+      }
+
+      if (data.audio) {
+        try {
+          const audio = new Audio(data.audio);
+          window.currentTTSAudio = audio;
+          audio.play().catch(e => console.warn("Backend audio playback error:", e));
+        } catch (e) {
+          console.error("Audio play error", e);
+        }
+      } else if (window.speechSynthesis) {
         const cleanContent = content
           .replace(/\*/g, '')
           .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '')
           .trim();
-        const utterance = new SpeechSynthesisUtterance(cleanContent);
-        // Slightly higher pitch and standard rate for a more pleasing tone
-        utterance.pitch = 1.05;
-        utterance.rate = 1;
 
-        const voices = window.speechSynthesis.getVoices();
-        // Priority for pleasing female voices across different platforms (Windows, macOS, Chrome)
-        const preferred = voices.find(v =>
-          /google (uk|us) english female/i.test(v.name) ||
-          /samantha|zira|hazel|victoria|susan|karen|veena/i.test(v.name) ||
-          /female|woman/i.test(v.name)
-        ) || voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || voices.find(v => v.lang.startsWith('en'));
+        if (cleanContent) {
+          const utterance = new SpeechSynthesisUtterance(cleanContent);
+          utterance.pitch = 1.25; // Feminine pitch shift
+          utterance.rate = 0.95;
+          utterance.lang = 'hi-IN';
 
-        if (preferred) utterance.voice = preferred;
-        window.speechSynthesis.speak(utterance);
+          const speakWithVoice = () => {
+            const voices = window.speechSynthesis.getVoices();
+            if (!voices || voices.length === 0) return;
+
+            const isMale = (v) => {
+              const name = (v.name || '').toLowerCase();
+              return /hemant|david|mark|george|james|richard|male|guy|man|boy|benjamin|daniel|liam|stefan|pavel|brian|chris|eric|frank|fred|greg|harry|jack|john|mike|paul|peter|sam|tom|tony|ravi|rishi|salman|karthik/i.test(name);
+            };
+
+            const isKnownFemaleName = (v) => {
+              const name = (v.name || '').toLowerCase();
+              return /swara|kalpana|heera|veena|zira|hazel|samantha|eva|catherine|linda|susan|karen|victoria|fiona|jenny|aria|female|woman|girl|neerja/i.test(name);
+            };
+
+            // 1. Explicit Hindi Female Voice (e.g. Swara, Kalpana, Heera, Veena, hi-IN female)
+            let selectedVoice = voices.find(v =>
+              (v.lang.startsWith('hi') || /hindi|हिन्दी/i.test(v.name)) &&
+              !isMale(v) &&
+              isKnownFemaleName(v)
+            );
+
+            // 2. Fallback: Any Hindi Voice that is strictly NOT male
+            if (!selectedVoice) {
+              selectedVoice = voices.find(v =>
+                (v.lang.startsWith('hi') || /hindi|हिन्दी/i.test(v.name)) &&
+                !isMale(v)
+              );
+            }
+
+            // 3. Fallback: Indian English Female Voice (e.g. en-IN female / Veena / Zira)
+            if (!selectedVoice) {
+              selectedVoice = voices.find(v =>
+                v.lang.toLowerCase().includes('in') &&
+                !isMale(v) &&
+                isKnownFemaleName(v)
+              );
+            }
+
+            // 4. Fallback: Any Global Female Voice (Zira, Hazel, Samantha, Eva, etc.)
+            if (!selectedVoice) {
+              selectedVoice = voices.find(v =>
+                !isMale(v) && isKnownFemaleName(v)
+              );
+            }
+
+            // 5. Ultimate Fallback: Any Voice that is NOT male
+            if (!selectedVoice) {
+              selectedVoice = voices.find(v => !isMale(v));
+            }
+
+            if (selectedVoice) {
+              utterance.voice = selectedVoice;
+              if (selectedVoice.lang) {
+                utterance.lang = selectedVoice.lang;
+              }
+              window.speechSynthesis.cancel();
+              window.speechSynthesis.speak(utterance);
+            }
+          };
+
+          const voices = window.speechSynthesis.getVoices();
+          if (voices.length > 0) {
+            speakWithVoice();
+          } else {
+            window.speechSynthesis.onvoiceschanged = () => {
+              window.speechSynthesis.onvoiceschanged = null;
+              speakWithVoice();
+            };
+          }
+        }
       }
     } catch (err) {
       const errMsgs = [...newMsgs, {
@@ -249,83 +338,118 @@ const CommandBar = () => {
   };
 
   const handleMicToggle = async () => {
-    const newState = !isListening;
-    setIsListening(newState);
-
-    if (newState) {
-      window.dispatchEvent(new CustomEvent('chat-cleared')); // Show globe instantly!
-      // 1. Setup speech recognition
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = true;
-
-        recognition.onresult = (e) => {
-          let finalTranscript = '';
-          for (let i = e.resultIndex; i < e.results.length; ++i) {
-            if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
-          }
-          if (finalTranscript) {
-            setInput(prev => (prev ? prev + ' ' : '') + finalTranscript);
-          }
-        };
-
-        recognition.onend = () => {
-          setIsListening(false);
-          window.dispatchEvent(new CustomEvent('toggle-mic', { detail: { isListening: false } }));
-          if (window.micCleanup) window.micCleanup();
-        };
-
-        window.activeRecognition = recognition;
-        recognition.start();
-      }
-
-      // 2. Setup frequency analyzer
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const analyzer = audioCtx.createAnalyser();
-        analyzer.fftSize = 256;
-        const source = audioCtx.createMediaStreamSource(stream);
-        source.connect(analyzer);
-        const dataArr = new Uint8Array(analyzer.frequencyBinCount);
-
-        const updateFreq = () => {
-          analyzer.getByteFrequencyData(dataArr);
-          let sum = 0;
-          for (let i = 0; i < dataArr.length; i++) sum += dataArr[i];
-          const avg = sum / dataArr.length;
-          // avg is typically 0 to 255
-          window.dispatchEvent(new CustomEvent('mic-frequency', { detail: { volume: avg } }));
-          window.micAnimFrame = requestAnimationFrame(updateFreq);
-        };
-        updateFreq();
-
-        window.micCleanup = () => {
-          if (window.micAnimFrame) cancelAnimationFrame(window.micAnimFrame);
-          stream.getTracks().forEach(t => t.stop());
-          if (audioCtx.state !== 'closed') audioCtx.close();
-          window.dispatchEvent(new CustomEvent('mic-frequency', { detail: { volume: 0 } }));
-        };
-      } catch (err) {
-        console.error("Mic access denied or err", err);
-      }
-    } else {
+    if (isListening) {
+      // STOP listening
       if (window.activeRecognition) {
-        window.activeRecognition.stop();
+        try { window.activeRecognition.stop(); } catch (e) { }
+        window.activeRecognition = null;
       }
       if (window.micCleanup) {
         window.micCleanup();
+        window.micCleanup = null;
+      }
+      setIsListening(false);
+      window.dispatchEvent(new CustomEvent('toggle-mic', { detail: { isListening: false } }));
+      return;
+    }
+
+    // START listening
+    setIsListening(true);
+    window.dispatchEvent(new CustomEvent('toggle-mic', { detail: { isListening: true } }));
+
+    // 1. Setup speech recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'hi-IN';
+
+      let textBuffer = '';
+
+      recognition.onresult = (e) => {
+        let transcript = '';
+        for (let i = 0; i < e.results.length; i++) {
+          transcript += e.results[i][0].transcript;
+        }
+        textBuffer = transcript;
+        setInput(transcript);
+      };
+
+      recognition.onerror = (e) => {
+        console.warn("Speech recognition error:", e.error);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        window.dispatchEvent(new CustomEvent('toggle-mic', { detail: { isListening: false } }));
+        if (window.micCleanup) {
+          window.micCleanup();
+          window.micCleanup = null;
+        }
+        if (textBuffer && textBuffer.trim()) {
+          handleSubmit(textBuffer.trim());
+        }
+      };
+
+      window.activeRecognition = recognition;
+      try {
+        recognition.start();
+      } catch (err) {
+        console.warn("Recognition start err:", err);
       }
     }
 
-    window.isMicActive = newState;
-    window.dispatchEvent(new CustomEvent('toggle-mic', { detail: { isListening: newState } }));
+    // 2. Setup frequency analyzer for visual animation
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const analyzer = audioCtx.createAnalyser();
+      analyzer.fftSize = 256;
+      const source = audioCtx.createMediaStreamSource(stream);
+      source.connect(analyzer);
+      const dataArr = new Uint8Array(analyzer.frequencyBinCount);
+
+      const updateFreq = () => {
+        analyzer.getByteFrequencyData(dataArr);
+        let sum = 0;
+        for (let i = 0; i < dataArr.length; i++) sum += dataArr[i];
+        const avg = sum / dataArr.length;
+        window.dispatchEvent(new CustomEvent('mic-frequency', { detail: { volume: avg } }));
+        window.micAnimFrame = requestAnimationFrame(updateFreq);
+      };
+      updateFreq();
+
+      window.micCleanup = () => {
+        if (window.micAnimFrame) cancelAnimationFrame(window.micAnimFrame);
+        stream.getTracks().forEach(t => t.stop());
+        if (audioCtx.state !== 'closed') audioCtx.close();
+        window.dispatchEvent(new CustomEvent('mic-frequency', { detail: { volume: 0 } }));
+      };
+    } catch (err) {
+      console.error("Mic access denied or err", err);
+    }
   };
 
   const clearLogs = () => {
     setLogs([]);
+  };
+
+  const [copiedIdx, setCopiedIdx] = useState(null);
+
+  const handleCopyText = (text, idx) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 2000);
+  };
+
+  const handlePasteInput = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setInput(prev => (prev ? prev + ' ' + text : text));
+    } catch (err) {
+      console.error("Paste error:", err);
+    }
   };
 
   const renderMessageContent = (content) => {
@@ -378,8 +502,15 @@ const CommandBar = () => {
               if (msg.role === 'user') {
                 return (
                   <div key={idx} className="flex justify-end w-full group mb-2">
-                    <div className="max-w-[80%] md:max-w-[70%] px-5 py-3 rounded-2xl md:rounded-3xl bg-[#2f2f2f] text-white/95 text-[15px] leading-relaxed shadow-sm">
+                    <div className="relative max-w-[80%] md:max-w-[70%] px-5 py-3 rounded-2xl md:rounded-3xl bg-[#2f2f2f] text-white/95 text-[15px] leading-relaxed shadow-sm">
                       <p className="whitespace-pre-wrap break-words">{renderMessageContent(msg.content)}</p>
+                      <button
+                        onClick={() => handleCopyText(msg.content, idx)}
+                        className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-[10px] flex items-center gap-1"
+                        title="Copy message"
+                      >
+                        {copiedIdx === idx ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                      </button>
                     </div>
                   </div>
                 );
@@ -389,9 +520,28 @@ const CommandBar = () => {
                   <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-[#0a0d17] shadow-sm">
                     <Cpu size={15} className={msg.type === 'error' ? "text-red-400" : "text-emerald-400"} />
                   </div>
-                  <div className="flex-1 flex flex-col pt-1 w-full max-w-full overflow-hidden">
-                    <h3 className="text-[13px] font-semibold text-white/80 mb-1">Jarvis</h3>
-                    <div className={"w-full text-[15px] leading-relaxed " +
+                  <div className="flex-1 flex flex-col pt-1 w-full max-w-full overflow-hidden relative">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="text-[13px] font-semibold text-white/80">Jarvis</h3>
+                      <button
+                        onClick={() => handleCopyText(msg.content, idx)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-0.5 rounded-md bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-[10px] flex items-center gap-1"
+                        title="Copy response"
+                      >
+                        {copiedIdx === idx ? (
+                          <>
+                            <Check size={12} className="text-emerald-400" />
+                            <span className="text-emerald-400 font-medium">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={12} />
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <div className={"w-full text-[15px] leading-relaxed select-text " +
                       (msg.type === 'error'
                         ? "text-red-400"
                         : "text-white/90")}>
